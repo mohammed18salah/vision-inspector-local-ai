@@ -48,7 +48,7 @@ jobs:
       - name: Create checksums
         shell: pwsh
         run: |
-          Get-ChildItem release -Filter *.exe | Get-FileHash -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  $($_.Name)" } | Out-File -Encoding ascii release\SHA256SUMS.txt
+          Get-ChildItem release -Filter *.exe | Get-FileHash -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  $([System.IO.Path]::GetFileName($_.Path))" } | Out-File -Encoding ascii release\SHA256SUMS.txt
 
       - name: Upload Windows installer artifact
         uses: actions/upload-artifact@v4
