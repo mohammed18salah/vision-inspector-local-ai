@@ -1,6 +1,6 @@
 {
   "name": "vision-inspector-local-ai",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "Arabic-first local AI image, video, and OCR analysis for web and Windows.",
   "author": { "name": "Mohammed Salah" },
   "type": "module",
@@ -121,6 +121,7 @@
     "appId": "com.mohammedsalah.visioninspector",
     "productName": "Vision Inspector Local AI",
     "asar": true,
+    "artifactName": "Vision.Inspector.Local.AI.Setup.${version}.${ext}",
     "directories": { "output": "release" },
     "files": [
       "desktop/dist/**/*",
