@@ -2,6 +2,8 @@ import { env, pipeline, RawImage, type ProgressCallback } from "@huggingface/tra
 import { createWorker } from "tesseract.js";
 import { boxIou, matchTracks, mergeDetections, toCsv } from "./vision-core";
 import type { Box, Detection, OcrResult, TrackedDetection } from "./vision-core";
+import { benchmarkStats, compareToWasm } from "./performance-core";
+import type { BenchmarkComparison, BenchmarkStats } from "./performance-core";
 
 export { boxIou, matchTracks, mergeDetections, toCsv } from "./vision-core";
 export type { Box, Detection, OcrResult, TrackedDetection } from "./vision-core";
@@ -18,6 +20,22 @@ if (env.backends.onnx.wasm) {
 }
 
 export type DeviceRuntime = "webgpu" | "wasm";
+
+export type BenchmarkRun = {
+  device: DeviceRuntime;
+  modelLoadMs: number | null;
+  warmupMs: number | null;
+  stats: BenchmarkStats;
+  error: string | null;
+};
+
+export type PerformanceBenchmark = {
+  sourceSize: { width: number; height: number };
+  iterations: number;
+  webgpuAvailable: boolean;
+  runs: BenchmarkRun[];
+  comparison: BenchmarkComparison;
+};
 
 type ModelBox = { xmin: number; ymin: number; xmax: number; ymax: number };
 type ModelOutput = { score: number; label: string; box: ModelBox };
@@ -54,6 +72,40 @@ export async function loadPrimaryModel(onProgress?: ProgressCallback) {
 }
 
 export function selectedInferenceDevice() { return activeDevice; }
+
+async function benchmarkRun(raw: RawImage, device: DeviceRuntime, iterations: number): Promise<BenchmarkRun> {
+  const loadStartedAt = performance.now();
+  try {
+    const detector = await pipeline("object-detection", "Xenova/yolos-tiny", { device, dtype: "q8" }) as unknown as ObjectDetector;
+    const modelLoadMs = Math.round(performance.now() - loadStartedAt);
+    const warmupStartedAt = performance.now();
+    await detector(raw, { threshold: 0.18 });
+    const warmupMs = Math.round(performance.now() - warmupStartedAt);
+    const samplesMs: number[] = [];
+    for (let index = 0; index < iterations; index += 1) {
+      const startedAt = performance.now();
+      await detector(raw, { threshold: 0.18 });
+      samplesMs.push(Math.round(performance.now() - startedAt));
+    }
+    return { device, modelLoadMs, warmupMs, stats: benchmarkStats(samplesMs), error: null };
+  } catch (error) {
+    return { device, modelLoadMs: null, warmupMs: null, stats: benchmarkStats([]), error: error instanceof Error ? error.message : "تعذر تشغيل القياس." };
+  }
+}
+
+export async function benchmarkObjectDetection(image: HTMLImageElement | RawImage, iterations = 3): Promise<PerformanceBenchmark> {
+  const raw = image instanceof RawImage ? image : await RawImage.fromURL(image.src);
+  const webgpuAvailable = await getPreferredDevice() === "webgpu";
+  const wasmRun = await benchmarkRun(raw, "wasm", iterations);
+  const webgpuRun = webgpuAvailable ? await benchmarkRun(raw, "webgpu", iterations) : null;
+  return {
+    sourceSize: { width: raw.width, height: raw.height },
+    iterations,
+    webgpuAvailable,
+    runs: webgpuRun ? [wasmRun, webgpuRun] : [wasmRun],
+    comparison: compareToWasm(webgpuRun?.stats.medianMs ?? null, wasmRun.stats.medianMs),
+  };
+}
 
 function resultToDetections(results: ModelOutput[], width: number, height: number, sourceModel: string, tentative = false): Detection[] {
   return results.map((result, index) => {

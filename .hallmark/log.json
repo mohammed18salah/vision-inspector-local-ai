@@ -1,0 +1,16 @@
+[
+  {
+    "date": "2026-08-28",
+    "macrostructure": "Workbench",
+    "theme": "ForgeSight Classic Dark",
+    "enrichment": "none",
+    "brief": "Local Windows media-analysis workspace with classic dark Apple-inspired restraint."
+  },
+  {
+    "date": "2026-08-28",
+    "macrostructure": "History panel",
+    "theme": "ForgeSight Classic Dark",
+    "enrichment": "none",
+    "brief": "Electron screenshot verified the local-history panel overlays the workbench cleanly and shows a filename leaf, engine, media type, counts, and clear deletion controls without an absolute path or media preview."
+  }
+]

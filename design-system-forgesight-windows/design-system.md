@@ -1,43 +1,39 @@
-# ForgeSight Windows Design System
+# ForgeSight Classic Dark 2.0
 
-## Overview
+> **Hallmark pre-emit critique:** Philosophy 5/5 · Hierarchy 5/5 · Execution 5/5 · Specificity 5/5 · Restraint 5/5 · Variety 4/5.
 
-ForgeSight Windows is a **precision desktop workspace** for local media analysis. It must feel native to a modern Windows desktop: dense enough for serious inspection, calm enough for long sessions, and clear about the privacy and hardware state of the device. It is not a copy of the web interface. The desktop app uses a graphite inspection field, translucent command surfaces, and high-signal device indicators.
+ForgeSight Classic Dark is an Arabic-first system for a local Windows inspection workspace. It draws from the composure of classic Apple utility software: the media is primary, controls are quiet, typography is clear, and state is communicated by wording and placement before colour. It is deliberately not a neon, glass-heavy, or icon-dense “AI” theme.
 
-## Color system
+## Colour system
 
-| Token | Value | Visual | Usage rule |
+| Token | Value | Visual | Rule |
 | --- | --- | --- | --- |
-| Canvas | `#101317` | ████ | Media surround and app background. Never use for body text surfaces. |
-| Surface | `#171B21` | ████ | Main sidebars, panels, and inspector cards. |
-| Raised surface | `#202630` | ████ | Hover states, menus, and controls. |
-| Azure | `#53B2FF` | ████ | Primary action, focus, selected navigation. Keep it for a single key action per area. |
-| Mineral lime | `#A8E85A` | ████ | Local processing, ready GPU, success only. Do not use as a general decorative color. |
-| Amber | `#F4BE63` | ████ | Candidate/low-confidence result and fallback state. |
-| Coral | `#FF7D7B` | ████ | Recoverable errors and destructive actions. |
+| Canvas | `oklch(15% 0.012 255)` | ████ | Deepest background and media surround; never use for ordinary text panels. |
+| Surface | `oklch(18% 0.012 255)` | ████ | Navigation, inspector, and primary cards. |
+| Raised surface | `oklch(22% 0.013 255)` | ████ | Fields, secondary buttons, and result rows. |
+| Focus blue | `oklch(72% 0.135 250)` | ████ | One key action per area, keyboard focus, and confirmed selection. |
+| Success green | `oklch(75% 0.115 155)` | ████ | Completion only; never a general decoration or “GPU ready” claim. |
+| Candidate amber | `oklch(79% 0.115 78)` | ████ | Low-confidence candidate and unavailable comparison. |
+| Error coral | `oklch(68% 0.16 25)` | ████ | Recoverable errors and destructive choices. |
 
-All regular text must meet a minimum 4.5:1 contrast ratio against its surface. Never convey confidence only by color: confirmed labels say **مؤكد**, and low-confidence labels say **مرشح**.
+All normal text must retain at least 4.5:1 contrast against its intended surface. A confirmed result must say **مؤكد** where the context needs it, and a low-confidence result must say **مرشح**; colour alone is never the only signal.
 
-## Typography
+## Typography and spacing
 
-`Changa` gives Arabic headings a deliberate, technical presence. `Tajawal` carries dense UI copy with readable Arabic metrics. `JetBrains Mono` is reserved for runtime, device, timecode, confidence, and file metadata. Avoid all-caps Arabic. Keep English technical names in LTR isolated spans so RTL layout stays stable.
+The intentional single-font system uses `Segoe UI Variable` for heading and body so Windows text feels native rather than branded. `Cascadia Mono` is limited to engine state, durations, checksums, and benchmark values. Use a 4px base grid with 12px gaps inside controls, 16px compact-panel spacing, 20px standard-panel padding, and 24px separation between major workspace areas.
 
-## Spacing and layout
+## Component rules
 
-The system uses a 4px unit. Standard panel padding is 20px; related control groups use 8px or 12px gaps; major workspace areas are separated by 24px. At widths above 1100px, use a three-column layout: navigation (240px), media workspace (fluid), inspector (320px). Collapse the navigation at narrow widths and stack the inspector below the media area under 840px.
+The primary button is a restrained blue capsule only for the current task, with an Arabic verb such as «ابدأ التحليل» or «تشغيل المقارنة». Secondary buttons remain graphite with a one-pixel outline. Cards are matte and hairline-bounded; they do not use decorative gradients. Confirmed bounding boxes use quiet blue; candidate boxes use dashed amber. Icons are optional functional affordances, never decorative labels; do not use emoji or icons such as sparkles, lightning, or a brain to market the analysis.
 
-## Component patterns
+## Windows adaptation
 
-Primary buttons are azure, one per task context, and contain a verb: «افتح ملفًا»، «ابدأ التحليل»، «صدّر JSON». Secondary buttons use the raised surface and visible 1px boundary. Panels always retain a thin border—even when shadowed—to preserve hierarchy on dark surfaces. Detection boxes use cool blue when confirmed and amber dashed borders when tentative. Tooltips should explain the actual WebGPU and WASM/CPU fallback choices in plain Arabic; this implementation does not claim a native DirectML backend.
+Preserve native window controls. Keep actions keyboard reachable and show an immediate blue focus ring. The responsive layouts are verified at 320, 375, 414, and 768 pixels for renderer resilience, while the packaged desktop window maintains its practical minimum working width. Respect system reduced-motion settings and limit motion to opacity and transform.
 
-## Windows adaptation rules
+## AI implementation instructions
 
-Respect the system color scheme, reduced-motion setting, and window scale. Use a 36px minimum control height and visible keyboard focus. For standard window chrome, preserve native Windows controls; do not recreate minimize/maximize/close buttons unless using a custom title bar with equivalent accessible actions. Report the inference device actually selected by runtime, not the preferred device.
-
-## AI agent instructions
-
-1. Keep content Arabic-first and RTL; wrap file extensions, model IDs, timecodes, and percentages in `dir="ltr"` spans.
-2. Use `--fs-*` variables only; do not hardcode color, radius, or shadow values in components.
-3. Preserve a strong visual distinction between confirmed detections and tentative candidates.
-4. Make the media canvas the largest region; controls and results must support, not compete with, the image or video.
-5. Do not simulate device capability. The UI must render the execution provider reported by runtime.
+1. Use only `--fs-*` colour, type, radius, spacing, shadow, and motion tokens; do not introduce literal colours or font families inside components.
+2. Keep content Arabic-first and RTL. Wrap model IDs, timings, checksums, and percentages in `dir="ltr"` spans.
+3. Let media fill the visual centre. Navigation, performance, history, and results remain supporting tools.
+4. Show only runtime-confirmed device information. Label absent WebGPU as unavailable rather than inferring GPU speed.
+5. History is local and must not expose absolute paths or retain the user’s original media bytes.

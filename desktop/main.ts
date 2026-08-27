@@ -3,6 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { existsSync, promises as fs } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { createHistoryEntry, parseHistoryEntry, sanitizeHistoryInput, type LocalHistoryEntry } from "./history-core";
 
 protocol.registerSchemesAsPrivileged([
   { scheme: "vision-media", privileges: { secure: true, standard: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
@@ -11,6 +12,31 @@ protocol.registerSchemesAsPrivileged([
 
 type LocalAsset = { path: string; mime: string };
 const selectedAssets = new Map<string, LocalAsset>();
+const HISTORY_LIMIT = 100;
+let historyQueue: Promise<void> = Promise.resolve();
+
+function historyFilePath() { return path.join(app.getPath("userData"), "vision-inspector-history.json"); }
+
+async function readHistory(): Promise<LocalHistoryEntry[]> {
+  try {
+    const value: unknown = JSON.parse(await fs.readFile(historyFilePath(), "utf8"));
+    return Array.isArray(value) ? value.map(parseHistoryEntry).filter((entry): entry is LocalHistoryEntry => entry !== null).slice(0, HISTORY_LIMIT) : [];
+  } catch { return []; }
+}
+
+async function writeHistory(entries: LocalHistoryEntry[]) {
+  const destination = historyFilePath();
+  const temporary = `${destination}.${randomUUID()}.tmp`;
+  await fs.mkdir(path.dirname(destination), { recursive: true });
+  await fs.writeFile(temporary, JSON.stringify(entries.slice(0, HISTORY_LIMIT), null, 2), "utf8");
+  await fs.rename(temporary, destination);
+}
+
+function queueHistory<T>(work: () => Promise<T>) {
+  const result = historyQueue.then(work, work);
+  historyQueue = result.then(() => undefined, () => undefined);
+  return result;
+}
 
 function mediaMime(filePath: string) {
   const extension = path.extname(filePath).toLowerCase();
@@ -113,6 +139,27 @@ app.whenReady().then(async () => {
     const checksum = createHash("sha256").update(request.content).digest("hex");
     return { saved: true, path: result.filePath, checksum };
   });
+
+  ipcMain.handle("vision:history-list", () => queueHistory(readHistory));
+  ipcMain.handle("vision:history-add", (_event, request: unknown) => queueHistory(async () => {
+    const input = sanitizeHistoryInput(request);
+    if (!input) throw new Error("Invalid local history record");
+    const entry = createHistoryEntry(input, randomUUID(), new Date().toISOString());
+    const next = [entry, ...(await readHistory())].slice(0, HISTORY_LIMIT);
+    await writeHistory(next);
+    return entry;
+  }));
+  ipcMain.handle("vision:history-remove", (_event, id: unknown) => queueHistory(async () => {
+    if (typeof id !== "string") throw new Error("Invalid history id");
+    const history = await readHistory();
+    const next = history.filter((entry) => entry.id !== id);
+    if (next.length !== history.length) await writeHistory(next);
+    return { removed: next.length !== history.length };
+  }));
+  ipcMain.handle("vision:history-clear", () => queueHistory(async () => {
+    await writeHistory([]);
+    return { cleared: true };
+  }));
 
   ipcMain.handle("vision:device", async () => {
     const gpuFeatures = app.getGPUFeatureStatus();

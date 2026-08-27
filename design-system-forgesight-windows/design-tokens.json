@@ -1,75 +1,12 @@
 {
-  "meta": {
-    "name": "ForgeSight Windows",
-    "description": "A precision Windows 11-inspired local-AI workspace for Arabic-first media inspection.",
-    "version": "1.0.0",
-    "created": "2026-08-27",
-    "personality": "Calm precision rather than sci-fi spectacle. Frosted command surfaces frame a dark graphite inspection field, while electric azure and mineral lime communicate local computation, reliable detection, and device capability."
-  },
+  "meta": {"name":"ForgeSight Classic Dark","description":"Arabic-first, Apple-classic dark desktop inspection system.","version":"2.0.0","created":"2026-08-28","personality":"Quietly premium, matte, and functional. Media is primary; colour and icons are restrained."},
   "colors": {
-    "canvas": { "value": "#101317", "usage": "Desktop app background and media-workspace surround." },
-    "surface": { "value": "#171B21", "usage": "Primary panels and navigation surfaces." },
-    "surface-raised": { "value": "#202630", "usage": "Hoverable cards, menus, and inspectors." },
-    "surface-selected": { "value": "#14304A", "usage": "Selected mode, active list item, and focused tool state." },
-    "glass": { "value": "rgba(32,38,48,0.76)", "usage": "Translucent command bar and floating controls." },
-    "primary": { "value": "#53B2FF", "usage": "Main actions, focus rings, links, and selected controls." },
-    "primary-hover": { "value": "#8DCCFF", "usage": "Hover state for primary interactions." },
-    "secondary": { "value": "#AAB4C3", "usage": "Secondary actions and inactive technical labels." },
-    "accent": { "value": "#A8E85A", "usage": "Local/GPU-ready states, successful detection, and privacy status." },
-    "warning": { "value": "#F4BE63", "usage": "Tentative detection, fallback, and caution states." },
-    "error": { "value": "#FF7D7B", "usage": "Decode, model, and file errors." },
-    "border": { "value": "#313945", "usage": "Panel dividers, inputs, and inactive control borders." },
-    "border-strong": { "value": "#4C5868", "usage": "Focused or selected input boundary." },
-    "text-primary": { "value": "#F3F7FB", "usage": "Headings, body copy, and important values." },
-    "text-secondary": { "value": "#AAB4C3", "usage": "Captions, technical metadata, and helper text." },
-    "text-muted": { "value": "#788394", "usage": "Disabled content and tertiary labels." },
-    "text-on-primary": { "value": "#06121F", "usage": "Text on azure primary controls." },
-    "overlay-box": { "value": "#6EC0FF", "usage": "Confirmed object bounding boxes." },
-    "overlay-tentative": { "value": "#F4BE63", "usage": "Candidate object bounding boxes." }
+    "canvas":{"value":"oklch(15% 0.012 255)","usage":"Application surround and media field."},"surface":{"value":"oklch(18% 0.012 255)","usage":"Navigation, inspector, and cards."},"surface-raised":{"value":"oklch(22% 0.013 255)","usage":"Controls and result rows."},"surface-hover":{"value":"oklch(27% 0.014 255)","usage":"Hover state."},"surface-selected":{"value":"oklch(30% 0.036 250)","usage":"Selected navigation and result."},"primary":{"value":"oklch(72% 0.135 250)","usage":"Single primary action and keyboard focus."},"primary-hover":{"value":"oklch(78% 0.115 250)","usage":"Primary hover."},"text-primary":{"value":"oklch(95% 0.008 255)","usage":"Titles and main content."},"text-secondary":{"value":"oklch(75% 0.014 255)","usage":"Supporting copy."},"text-muted":{"value":"oklch(60% 0.015 255)","usage":"Technical metadata."},"text-on-primary":{"value":"oklch(18% 0.012 255)","usage":"Text on blue controls."},"border":{"value":"oklch(32% 0.014 255)","usage":"Hairline separation."},"border-strong":{"value":"oklch(47% 0.026 250)","usage":"High-attention boundary."},"success":{"value":"oklch(75% 0.115 155)","usage":"Completed analysis only."},"warning":{"value":"oklch(79% 0.115 78)","usage":"Candidates and unavailable comparisons."},"error":{"value":"oklch(68% 0.16 25)","usage":"Recoverable errors."},"overlay-confirmed":{"value":"oklch(76% 0.13 248)","usage":"Confirmed detection outline."},"overlay-tentative":{"value":"oklch(80% 0.12 78)","usage":"Tentative detection outline."}
   },
-  "typography": {
-    "font-display": { "family": "Changa", "fallback": "Segoe UI, sans-serif", "source": "https://fonts.googleapis.com/css2?family=Changa:wght@500;600;700&display=swap" },
-    "font-body": { "family": "Tajawal", "fallback": "Segoe UI, sans-serif", "source": "https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" },
-    "font-mono": { "family": "JetBrains Mono", "fallback": "Consolas, monospace", "source": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" },
-    "scale": {
-      "xs": { "size": "0.6875rem", "lineHeight": "1rem", "usage": "Status chips, table metadata, shortcut hints." },
-      "sm": { "size": "0.8125rem", "lineHeight": "1.25rem", "usage": "Labels, inspector metadata, supporting descriptions." },
-      "base": { "size": "0.9375rem", "lineHeight": "1.5rem", "usage": "Body text and standard controls." },
-      "lg": { "size": "1.125rem", "lineHeight": "1.625rem", "usage": "Panel titles and mode-card labels." },
-      "xl": { "size": "1.375rem", "lineHeight": "1.875rem", "usage": "Workspace section titles." },
-      "2xl": { "size": "1.75rem", "lineHeight": "2.25rem", "usage": "Page titles." },
-      "3xl": { "size": "2.25rem", "lineHeight": "2.75rem", "usage": "Welcome title in a maximized window." }
-    },
-    "weights": { "normal": 400, "medium": 500, "semibold": 600, "bold": 700 }
-  },
-  "spacing": {
-    "base-unit": "4px",
-    "scale": { "0": "0", "1": "0.25rem", "2": "0.5rem", "3": "0.75rem", "4": "1rem", "5": "1.25rem", "6": "1.5rem", "8": "2rem", "10": "2.5rem", "12": "3rem", "16": "4rem" }
-  },
-  "borders": {
-    "radius": { "sm": "6px", "md": "10px", "lg": "14px", "xl": "18px", "full": "9999px" },
-    "width": { "default": "1px", "focus": "2px" }
-  },
-  "shadows": {
-    "sm": { "value": "0 4px 14px rgba(0,0,0,.16)", "usage": "Inputs and small floating controls." },
-    "md": { "value": "0 14px 30px rgba(0,0,0,.22)", "usage": "Cards, inspector panels, and menus." },
-    "lg": { "value": "0 24px 60px rgba(0,0,0,.38)", "usage": "Dialogs and command palette." },
-    "glow": { "value": "0 0 0 3px rgba(83,178,255,.18)", "usage": "Keyboard focus and active analysis mode." }
-  },
-  "effects": {
-    "backdrop-blur": "blur(20px)",
-    "transition-fast": "150ms cubic-bezier(.2,.8,.2,1)",
-    "transition-default": "220ms cubic-bezier(.2,.8,.2,1)",
-    "reduced-motion": "Disable non-essential transforms and scan animation when prefers-reduced-motion is active."
-  },
-  "components": {
-    "button": {
-      "primary": { "bg": "primary", "text": "text-on-primary", "radius": "md", "padding": "spacing.3 spacing.4" },
-      "secondary": { "bg": "surface-raised", "text": "text-primary", "radius": "md", "border": "border" },
-      "ghost": { "bg": "transparent", "text": "text-secondary", "radius": "sm" }
-    },
-    "panel": { "bg": "surface", "radius": "lg", "shadow": "md", "border": "border", "padding": "spacing.5" },
-    "input": { "bg": "canvas", "border": "border", "radius": "md", "text": "text-primary", "focus-ring": "primary" },
-    "detection": { "confirmed": "overlay-box", "tentative": "overlay-tentative", "label-bg": "glass" }
-  }
+  "typography":{"font-display":{"family":"Segoe UI Variable","fallback":"Segoe UI, Tahoma, sans-serif","source":"Windows system font"},"font-body":{"family":"Segoe UI Variable","fallback":"Segoe UI, Tahoma, sans-serif","source":"Windows system font"},"font-mono":{"family":"Cascadia Mono","fallback":"Consolas, monospace","source":"Windows system font"},"scale":{"xs":{"size":"0.6875rem","lineHeight":"1rem","usage":"metadata"},"sm":{"size":"0.8125rem","lineHeight":"1.25rem","usage":"labels"},"base":{"size":"0.9375rem","lineHeight":"1.5rem","usage":"body"},"lg":{"size":"1.125rem","lineHeight":"1.625rem","usage":"panel headings"},"xl":{"size":"1.375rem","lineHeight":"1.875rem","usage":"workspace titles"},"2xl":{"size":"1.875rem","lineHeight":"2.375rem","usage":"page title"}},"weights":{"normal":400,"medium":500,"semibold":600,"bold":700}},
+  "spacing":{"base-unit":"4px","scale":{"0":"0","1":"0.25rem","2":"0.5rem","3":"0.75rem","4":"1rem","5":"1.25rem","6":"1.5rem","8":"2rem","10":"2.5rem","12":"3rem"}},
+  "borders":{"radius":{"sm":"8px","md":"12px","lg":"16px","xl":"22px","full":"9999px"},"width":{"default":"1px","focus":"2px"}},
+  "shadows":{"sm":{"value":"0 1px 2px var(--fs-shadow-subtle)","usage":"field separation"},"md":{"value":"0 12px 32px var(--fs-shadow-medium)","usage":"floating controls"},"lg":{"value":"0 28px 70px var(--fs-shadow-strong)","usage":"dialogs"},"glow":{"value":"0 0 0 3px var(--fs-focus-ring)","usage":"keyboard focus only"}},
+  "effects":{"backdrop-blur":"blur(18px)","transition-fast":"140ms var(--fs-ease-out)","transition-default":"220ms var(--fs-ease-out)","reduced-motion":"Disable non-essential transitions."},
+  "components":{"button":{"primary":{"bg":"primary","text":"text-on-primary","radius":"md","padding":"spacing.3 spacing.4"},"secondary":{"bg":"surface-raised","text":"text-primary","radius":"md","border":"border"},"quiet":{"bg":"transparent","text":"text-secondary","radius":"sm"}},"panel":{"bg":"surface","radius":"lg","shadow":"sm","border":"border","padding":"spacing.5"},"input":{"bg":"surface-raised","border":"border","radius":"md","text":"text-primary","focus-ring":"primary"},"detection":{"confirmed":"overlay-confirmed","tentative":"overlay-tentative","label-bg":"surface"}}
 }

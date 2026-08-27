@@ -14,4 +14,13 @@ Please open a private GitHub security advisory for this repository. Do not inclu
 
 ## Distribution integrity
 
-The first public Windows build is not Authenticode-signed. Download the installer only from GitHub Releases, verify the published SHA-256 checksum, and treat any mismatched checksum as untrusted.
+The public Windows build is currently **not Authenticode-signed**. Download the installer only from GitHub Releases, verify the published SHA-256 checksum, and treat any mismatched checksum as untrusted.
+
+The release workflow supports a controlled signing path when the repository owner adds both GitHub Actions secrets below. The PFX file is decoded only in the temporary directory of the Windows runner, used by Electron Builder through `CSC_LINK` and `CSC_KEY_PASSWORD`, verified with `signtool verify /pa`, then deleted in an `always()` cleanup step. Neither secret belongs in source control, release assets, logs, issues, or local configuration files.
+
+| GitHub Actions secret | Required value |
+| --- | --- |
+| `WINDOWS_CERTIFICATE_PFX_BASE64` | Base64 encoding of a valid code-signing PFX certificate. |
+| `WINDOWS_CERTIFICATE_PASSWORD` | Password protecting that PFX certificate. |
+
+Until both secrets are present and the verification step passes, the workflow deliberately records the build as unsigned. A prepared signing path does not itself create a certificate or remove Windows SmartScreen warnings.

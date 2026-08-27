@@ -18,6 +18,8 @@ jobs:
   build-windows:
     runs-on: windows-latest
     timeout-minutes: 45
+    env:
+      HAS_WINDOWS_SIGNING_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE_PFX_BASE64 != '' && 'true' || 'false' }}
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -42,8 +44,36 @@ jobs:
           pnpm check
           pnpm desktop:check
 
+      - name: Prepare Authenticode certificate when configured
+        if: env.HAS_WINDOWS_SIGNING_CERTIFICATE == 'true'
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_PFX_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_PFX_BASE64 }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          $certificatePath = Join-Path $env:RUNNER_TEMP "vision-inspector-signing.pfx"
+          [System.IO.File]::WriteAllBytes($certificatePath, [System.Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_PFX_BASE64))
+          "CSC_LINK=$certificatePath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "CSC_KEY_PASSWORD=$env:WINDOWS_CERTIFICATE_PASSWORD" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Build Windows x64 installer
         run: pnpm desktop:pack:win
+
+      - name: Verify Authenticode signature
+        if: env.HAS_WINDOWS_SIGNING_CERTIFICATE == 'true'
+        shell: pwsh
+        run: |
+          $signTool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object FullName -Descending | Select-Object -First 1
+          if (-not $signTool) { throw "signtool.exe was not found on the Windows runner." }
+          Get-ChildItem release -Filter *.exe | ForEach-Object {
+            & $signTool.FullName verify /pa /v $_.FullName
+            if ($LASTEXITCODE -ne 0) { throw "Authenticode validation failed for $($_.Name)." }
+          }
+
+      - name: Record unsigned build state
+        if: env.HAS_WINDOWS_SIGNING_CERTIFICATE != 'true'
+        shell: pwsh
+        run: Write-Host "No Authenticode certificate is configured; this release is intentionally unsigned."
 
       - name: Create checksums
         shell: pwsh
@@ -58,6 +88,11 @@ jobs:
             release/*.exe
             release/SHA256SUMS.txt
           if-no-files-found: error
+
+      - name: Remove temporary Authenticode certificate
+        if: always() && env.HAS_WINDOWS_SIGNING_CERTIFICATE == 'true'
+        shell: pwsh
+        run: Remove-Item (Join-Path $env:RUNNER_TEMP "vision-inspector-signing.pfx") -Force -ErrorAction SilentlyContinue
 
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''

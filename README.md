@@ -8,9 +8,13 @@
 
 | Web workspace | Windows desktop workspace | Windows completed local analysis |
 | --- | --- | --- |
-| ![Arabic RTL web workspace showing the organized image/video choice.](docs/screenshots/web-app-home.png) | ![ForgeSight Windows desktop workspace in its initial local-analysis state.](docs/screenshots/windows-desktop-home.png) | ![Electron capture of ForgeSight Windows after real local detection and OCR, showing five detections, boxes, OCR output, and local CPU/WASM state.](docs/screenshots/windows-desktop-analysis.png) |
+| ![Arabic RTL web workspace showing the organized image/video choice.](docs/screenshots/web-app-home.png) | ![ForgeSight Windows desktop workspace in its initial local-analysis state.](docs/screenshots/windows-desktop-home.png) | ![Electron capture of ForgeSight Classic Dark after real local detection and OCR, showing five detections, boxes, local history, and a CPU/WASM performance reading.](docs/screenshots/windows-desktop-classic-analysis.png) |
 
 The screenshots show the real interfaces. The desktop captures come from the Electron window; they do not use a browser mockup or a static image inside the app.
+
+| Windows local history |
+| --- |
+| ![Electron capture of the local history panel showing an analysis summary without a media path or media copy.](docs/screenshots/windows-desktop-history.png) |
 
 ## Capabilities
 
@@ -23,7 +27,9 @@ The screenshots show the real interfaces. The desktop captures come from the Ele
 | Image inspection | Accurate `object-fit: contain` box layout, pan/zoom, focusable detections, and real image-region thumbnails. |
 | Result export | JSON and CSV downloads, including bounding boxes, OCR, model source, and `candidateLabel`/`tentative` fields where relevant. |
 | Video tracking | Local periodic frame analysis, IoU plus centre-proximity track matching, stable track IDs, and a canvas overlay above a native video player. |
-| Windows desktop | Electron desktop workspace with native file/save dialogs, local `vision-media://` file session protocol, device diagnostics, bundled ONNX Runtime/OCR assets, and a WebGPU-to-WASM/CPU inference fallback. |
+| Windows desktop | Electron desktop workspace with native file/save dialogs, local `vision-media://` file session protocol, device diagnostics, bundled ONNX Runtime/OCR assets, and a WebGPU-to-WASM/CPU inference fallback. The ForgeSight Classic Dark interface uses a restrained Windows-first dark palette and avoids decorative AI icons and emoji. |
+| Local performance meter | Optional, on-demand benchmark with separate model warm-up and three inference passes. It reports a median for WASM/CPU and adds WebGPU only after an adapter is confirmed. |
+| Local history | Persisted analysis and export summaries with local review, individual deletion, and clear-all control. It excludes original media bytes and absolute media paths. |
 
 ## Quick start
 
@@ -53,7 +59,7 @@ For a production installer on Windows:
 pnpm desktop:pack:win
 ```
 
-The installer is written to `release/`. For normal users, download the latest EXE and `SHA256SUMS.txt` from [GitHub Releases](https://github.com/mohammed18salah/vision-inspector-local-ai/releases), verify the checksum, and then run the installer.
+The installer is written to `release/`. For normal users, download the latest EXE and `SHA256SUMS.txt` from [GitHub Releases](https://github.com/mohammed18salah/vision-inspector-local-ai/releases), verify the checksum, and then run the installer. The workflow can sign a future build when the repository owner adds a trusted PFX certificate as protected GitHub Actions secrets; until then, releases are explicitly unsigned and Windows SmartScreen can warn.
 
 ### Install and run
 
@@ -88,9 +94,9 @@ Express server
 └── Allow-listed /api/model proxy for public model downloads only
 
 Windows desktop
-├── Electron main process: native file/save dialogs and device diagnostics
+├── Electron main process: native dialogs, device diagnostics, and atomic local history store
 ├── Preload bridge: allow-listed IPC only, context isolation enabled
-├── React ForgeSight Windows workspace
+├── React ForgeSight Classic Dark workspace with performance meter and history panel
 ├── Bundled ONNX Runtime WASM and Tesseract worker/core/language data
 └── Local WebGPU when available → local WASM/CPU fallback
 ```
@@ -105,7 +111,7 @@ For best results, use well-lit source material with the object occupying a meani
 
 ## Privacy
 
-Images, video frames, inference outputs, OCR, and exports stay in the browser or in the desktop application on the same device. The web server route is restricted to serving model files from public model repositories; the Windows application does not send user media to it. See [SECURITY.md](./SECURITY.md) for the desktop bridge and distribution model.
+Images, video frames, inference outputs, OCR, and exports stay in the browser or in the desktop application on the same device. The desktop history store keeps only compact analysis/export summaries such as a file-name leaf, engine, counts, time, export type, and checksum; it never stores the original media bytes or an absolute media path. The web server route is restricted to serving model files from public model repositories; the Windows application does not send user media to it. See [SECURITY.md](./SECURITY.md) for the desktop bridge and distribution model.
 
 ## Licenses and model notices
 

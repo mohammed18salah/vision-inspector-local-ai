@@ -1,0 +1,28 @@
+{
+  "date": "2026-08-28",
+  "scope": "desktop/renderer",
+  "framework": "React 19 + TypeScript + Vite renderer inside Electron",
+  "fonts": {
+    "display": "Changa",
+    "body": "Tajawal",
+    "mono": "JetBrains Mono"
+  },
+  "palette": "Existing ForgeSight CSS custom properties use graphite surfaces with azure/lime/amber accents; renderer styles include an additional radial blue treatment.",
+  "motion": "framer-motion is installed at project level, while the desktop surface currently relies primarily on CSS transitions and a scan spinner.",
+  "spacing": "4px base scale documented in ForgeSight design tokens.",
+  "existing_structure": "RTL Electron three-column workspace: navigation, media stage, inspector.",
+  "preserve": [
+    "Arabic-first RTL content",
+    "native Windows title-bar controls",
+    "local inference controls and result semantics",
+    "4px spacing discipline",
+    "reduced-motion and visible focus support"
+  ],
+  "introduce": [
+    "ForgeSight Classic Dark 2.0 OKLCH token system",
+    "restrained Apple-classic surface hierarchy",
+    "performance comparison panel",
+    "local history panel",
+    "removal of decorative AI iconography"
+  ]
+}
