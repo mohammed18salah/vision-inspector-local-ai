@@ -1,5 +1,6 @@
 import { RawImage, type ProgressCallback } from "@huggingface/transformers";
 import { detectObjects, type LocalDetection } from "./detector";
+import { boxIou, mergeDetections as mergeSharedDetections } from "@shared/vision-core";
 
 export type DetailTile = { x: number; y: number; width: number; height: number };
 
@@ -13,30 +14,8 @@ export function getDetailTiles(width: number, height: number): DetailTile[] {
   return yPositions.flatMap((y) => xPositions.map((x) => ({ x, y, width: tileWidth, height: tileHeight })));
 }
 
-export function detectionIou(a: LocalDetection["box"], b: LocalDetection["box"]) {
-  const left = Math.max(a.x, b.x);
-  const top = Math.max(a.y, b.y);
-  const right = Math.min(a.x + a.width, b.x + b.width);
-  const bottom = Math.min(a.y + a.height, b.y + b.height);
-  const intersection = Math.max(0, right - left) * Math.max(0, bottom - top);
-  const union = a.width * a.height + b.width * b.height - intersection;
-  return union ? intersection / union : 0;
-}
-
-export function mergeDetections(detections: LocalDetection[], duplicateIou = 0.52): LocalDetection[] {
-  const kept: LocalDetection[] = [];
-  [...detections]
-    .sort((a, b) => b.confidence - a.confidence)
-    .forEach((detection) => {
-      const duplicate = kept.some((existing) =>
-        existing.label === detection.label
-        && existing.isUnknown === detection.isUnknown
-        && detectionIou(existing.box, detection.box) >= duplicateIou,
-      );
-      if (!duplicate) kept.push(detection);
-    });
-  return kept.map((detection, index) => ({ ...detection, id: index + 1 }));
-}
+export const detectionIou = boxIou;
+export const mergeDetections = mergeSharedDetections;
 
 function cropImage(image: HTMLImageElement, tile: DetailTile) {
   const canvas = document.createElement("canvas");

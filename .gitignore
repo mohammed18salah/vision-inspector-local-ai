@@ -122,5 +122,13 @@ research-notes.md
 
 # Locally downloaded OCR language files and private test assets
 *.traineddata
+!desktop/renderer/public/tesseract/lang/eng.traineddata
+!desktop/renderer/public/tesseract/lang/ara.traineddata
 *.mp4
 *.webm
+
+# Desktop build output and local signing credentials
+release/
+desktop/dist/
+*.pfx
+*.p12

@@ -3,6 +3,7 @@
  * concise, trustworthy progress rather than decorative demo states.
  */
 import { env, pipeline, RawImage, type ProgressCallback } from "@huggingface/transformers";
+import type { VisionDetection } from "@shared/vision-core";
 
 env.allowLocalModels = false;
 env.allowRemoteModels = true;
@@ -13,14 +14,7 @@ if (env.backends.onnx.wasm) env.backends.onnx.wasm.numThreads = 1;
 type DetectorResult = { score: number; label: string; box: { xmin: number; ymin: number; xmax: number; ymax: number } };
 type Detector = (image: string | RawImage | HTMLImageElement | ImageData, options?: { threshold?: number }) => Promise<DetectorResult[]>;
 
-export type LocalDetection = {
-  id: number;
-  label: string;
-  confidence: number;
-  box: { x: number; y: number; width: number; height: number };
-  sourceModel: string;
-  isUnknown: boolean;
-};
+export type LocalDetection = VisionDetection;
 
 const MODEL_ID = "Xenova/yolos-tiny";
 let detectorPromise: Promise<Detector> | null = null;
