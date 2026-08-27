@@ -6,19 +6,11 @@
 
 ## Screenshots
 
-| Web workspace | Windows desktop workspace | Windows completed local analysis |
-| --- | --- | --- |
-| ![Arabic RTL web workspace showing the organized image/video choice.](docs/screenshots/web-app-home.png) | ![ForgeSight Windows desktop workspace in its initial local-analysis state.](docs/screenshots/windows-desktop-home.png) | ![Electron capture of ForgeSight Classic Dark after real local detection and OCR, showing five detections, boxes, local history, and a CPU/WASM performance reading.](docs/screenshots/windows-desktop-classic-analysis.png) |
+| Windows Classic Dark — initial state | Windows local-history sharing |
+| --- | --- |
+| ![Electron capture of the current Classic Dark initial state with no file selected and no claimed detections.](docs/screenshots/windows-desktop-classic-home.png) | ![Electron capture of the local history panel with CSV and PDF sharing controls.](docs/screenshots/windows-desktop-history-export.png) |
 
-The screenshots show the real interfaces. The desktop captures come from the Electron window; they do not use a browser mockup or a static image inside the app.
-
-| Windows local history |
-| --- |
-| ![Electron capture of the local history panel showing an analysis summary without a media path or media copy.](docs/screenshots/windows-desktop-history.png) |
-
-| Windows history sharing |
-| --- |
-| ![Electron capture of the local history panel with CSV and PDF sharing controls.](docs/screenshots/windows-desktop-history-export.png) |
+The screenshots come directly from the Electron window and deliberately show only verified interface states. They do not present a sample detection as a proof of universal accuracy; all detections remain model predictions with confidence and tentative-state semantics described below.
 
 ## Capabilities
 
