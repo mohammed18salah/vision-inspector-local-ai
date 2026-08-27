@@ -4,6 +4,7 @@ import { existsSync, promises as fs } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { createHistoryEntry, parseHistoryEntry, sanitizeHistoryInput, type LocalHistoryEntry } from "./history-core";
+import { createHistoryCsv, createHistoryPdfHtml, type HistoryExportFormat } from "./history-export-core";
 
 protocol.registerSchemesAsPrivileged([
   { scheme: "vision-media", privileges: { secure: true, standard: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
@@ -36,6 +37,25 @@ function queueHistory<T>(work: () => Promise<T>) {
   const result = historyQueue.then(work, work);
   historyQueue = result.then(() => undefined, () => undefined);
   return result;
+}
+
+async function renderHistoryPdf(html: string) {
+  const printer = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true } });
+  try {
+    await printer.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+    return await printer.webContents.printToPDF({ pageSize: "A4", landscape: true, printBackground: true });
+  } finally { if (!printer.isDestroyed()) printer.destroy(); }
+}
+
+async function saveHistoryExport(format: HistoryExportFormat, value: unknown) {
+  const baseName = `vision-inspector-local-history-${new Date().toISOString().slice(0, 10)}`;
+  // Development-only verification route. Packaged builds always use the native save dialog.
+  const smokePath = !app.isPackaged ? process.env.VISION_INSPECTOR_HISTORY_EXPORT_PATH : undefined;
+  const result = smokePath ? { canceled: false, filePath: smokePath } : await dialog.showSaveDialog({ title: "تصدير السجل المحلي", defaultPath: `${baseName}.${format}`, filters: [{ name: format === "pdf" ? "PDF" : "CSV", extensions: [format] }] });
+  if (result.canceled || !result.filePath) return { saved: false };
+  const content = format === "pdf" ? await renderHistoryPdf(createHistoryPdfHtml(value)) : Buffer.from(createHistoryCsv(value), "utf8");
+  await fs.writeFile(result.filePath, content);
+  return { saved: true, checksum: createHash("sha256").update(content).digest("hex") };
 }
 
 function mediaMime(filePath: string) {
@@ -160,6 +180,10 @@ app.whenReady().then(async () => {
     await writeHistory([]);
     return { cleared: true };
   }));
+  ipcMain.handle("vision:history-export", (_event, format: unknown, entries: unknown) => {
+    if (format !== "csv" && format !== "pdf") throw new Error("Unsupported local history export format");
+    return saveHistoryExport(format, entries);
+  });
 
   ipcMain.handle("vision:device", async () => {
     const gpuFeatures = app.getGPUFeatureStatus();

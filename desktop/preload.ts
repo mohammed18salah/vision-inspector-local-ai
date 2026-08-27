@@ -9,4 +9,5 @@ contextBridge.exposeInMainWorld("visionDesktop", {
   addHistory: (request: unknown) => ipcRenderer.invoke("vision:history-add", request),
   removeHistory: (id: string) => ipcRenderer.invoke("vision:history-remove", id),
   clearHistory: () => ipcRenderer.invoke("vision:history-clear"),
+  exportHistory: (format: "csv" | "pdf", entries: unknown) => ipcRenderer.invoke("vision:history-export", format, entries),
 });

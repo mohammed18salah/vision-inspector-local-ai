@@ -1,0 +1,6 @@
+.history-export-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+
+@media (max-width: 414px) {
+  .history-foot { align-items: flex-start; flex-direction: column; }
+  .history-export-actions { justify-content: flex-start; }
+}

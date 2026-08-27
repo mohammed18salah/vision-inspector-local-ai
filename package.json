@@ -1,6 +1,6 @@
 {
   "name": "vision-inspector-local-ai",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Arabic-first local AI image, video, and OCR analysis for web and Windows.",
   "author": { "name": "Mohammed Salah" },
   "type": "module",

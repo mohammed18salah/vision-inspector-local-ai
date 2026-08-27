@@ -13,6 +13,7 @@ declare global {
       addHistory(request: LocalHistoryInput): Promise<LocalHistoryEntry>;
       removeHistory(id: string): Promise<{ removed: boolean }>;
       clearHistory(): Promise<{ cleared: boolean }>;
+      exportHistory(format: "csv" | "pdf", entries: LocalHistoryEntry[]): Promise<{ saved: boolean; checksum?: string }>;
     };
   }
 }

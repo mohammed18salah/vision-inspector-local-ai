@@ -16,6 +16,10 @@ The screenshots show the real interfaces. The desktop captures come from the Ele
 | --- |
 | ![Electron capture of the local history panel showing an analysis summary without a media path or media copy.](docs/screenshots/windows-desktop-history.png) |
 
+| Windows history sharing |
+| --- |
+| ![Electron capture of the local history panel with CSV and PDF sharing controls.](docs/screenshots/windows-desktop-history-export.png) |
+
 ## Capabilities
 
 | Capability | Implementation |
@@ -29,7 +33,7 @@ The screenshots show the real interfaces. The desktop captures come from the Ele
 | Video tracking | Local periodic frame analysis, IoU plus centre-proximity track matching, stable track IDs, and a canvas overlay above a native video player. |
 | Windows desktop | Electron desktop workspace with native file/save dialogs, local `vision-media://` file session protocol, device diagnostics, bundled ONNX Runtime/OCR assets, and a WebGPU-to-WASM/CPU inference fallback. The ForgeSight Classic Dark interface uses a restrained Windows-first dark palette and avoids decorative AI icons and emoji. |
 | Local performance meter | Optional, on-demand benchmark with separate model warm-up and three inference passes. It reports a median for WASM/CPU and adds WebGPU only after an adapter is confirmed. |
-| Local history | Persisted analysis and export summaries with local review, individual deletion, and clear-all control. It excludes original media bytes and absolute media paths. |
+| Local history | Persisted analysis and export summaries with local review, individual deletion, and clear-all control. It excludes original media bytes and absolute media paths. The visible summaries can be shared on demand as BOM-encoded CSV or a self-contained landscape A4 PDF through a native save dialog. |
 
 ## Quick start
 
@@ -111,7 +115,7 @@ For best results, use well-lit source material with the object occupying a meani
 
 ## Privacy
 
-Images, video frames, inference outputs, OCR, and exports stay in the browser or in the desktop application on the same device. The desktop history store keeps only compact analysis/export summaries such as a file-name leaf, engine, counts, time, export type, and checksum; it never stores the original media bytes or an absolute media path. The web server route is restricted to serving model files from public model repositories; the Windows application does not send user media to it. See [SECURITY.md](./SECURITY.md) for the desktop bridge and distribution model.
+Images, video frames, inference outputs, OCR, and exports stay in the browser or in the desktop application on the same device. The desktop history store keeps only compact analysis/export summaries such as a file-name leaf, engine, counts, time, export type, and checksum; it never stores the original media bytes or an absolute media path. CSV and PDF history exports contain the same summaries only, and are written after the user chooses a location in the native dialog. The web server route is restricted to serving model files from public model repositories; the Windows application does not send user media to it. See [SECURITY.md](./SECURITY.md) for the desktop bridge and distribution model.
 
 ## Licenses and model notices
 

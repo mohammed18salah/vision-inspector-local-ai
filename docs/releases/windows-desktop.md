@@ -10,6 +10,7 @@ This release introduces the Windows x64 desktop edition of Vision Inspector Loca
 - A device-aware runtime that uses WebGPU when the Windows device/browser runtime exposes an adapter and falls back to local WASM/CPU when it does not.
 - An optional in-app benchmark that times warm-up and three inference iterations for local WASM/CPU and, only when available, WebGPU.
 - A local history panel for analysis and export summaries. It does not retain original media bytes or absolute media paths.
+- On-demand local-history export as UTF-8 BOM CSV or a self-contained, landscape A4 PDF. Both formats contain only the compact history summaries already visible in the panel.
 
 ## Installation and trust notice
 
