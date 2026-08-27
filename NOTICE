@@ -1,0 +1,12 @@
+Vision Inspector Local AI
+Copyright 2026 Mohammed Salah and contributors
+
+This repository's source code is provided under the Apache License, Version 2.0.
+
+The repository uses third-party packages and downloads publicly hosted model
+artifacts at runtime. Their names, trademarks, source code, and model weights
+remain subject to their respective licenses and terms. This NOTICE file does
+not grant rights to third-party assets or relicenses model weights.
+
+Relevant upstream projects include Transformers.js, Tesseract.js,
+Xenova/yolos-tiny, and onnx-community/grounding-dino-tiny-ONNX.
