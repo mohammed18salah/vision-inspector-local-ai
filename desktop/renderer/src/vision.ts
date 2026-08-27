@@ -12,6 +12,7 @@ env.allowRemoteModels = true;
 env.useBrowserCache = true;
 env.remoteHost = "vision-model://models/";
 if (env.backends.onnx.wasm) {
+  env.backends.onnx.logLevel = "error";
   env.backends.onnx.wasm.numThreads = Math.max(1, Math.min(4, navigator.hardwareConcurrency || 1));
   // Bundled with the desktop app so ONNX Runtime never fetches its dynamic
   // WebAssembly module from a CDN after installation. Resolve from the page,

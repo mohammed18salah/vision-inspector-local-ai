@@ -9,7 +9,13 @@ env.allowLocalModels = false;
 env.allowRemoteModels = true;
 env.useBrowserCache = true;
 env.remoteHost = "/api/model/";
-if (env.backends.onnx.wasm) env.backends.onnx.wasm.numThreads = 1;
+if (env.backends.onnx.wasm) {
+  env.backends.onnx.logLevel = "error";
+  env.backends.onnx.wasm.numThreads = 1;
+  // Keep ONNX Runtime on the same origin as the application. This prevents
+  // inference from failing when a public CDN is blocked or unreachable.
+  env.backends.onnx.wasm.wasmPaths = typeof window === "undefined" ? "/api/ort/" : new URL("/api/ort/", window.location.href).href;
+}
 
 type DetectorResult = { score: number; label: string; box: { xmin: number; ymin: number; xmax: number; ymax: number } };
 type Detector = (image: string | RawImage | HTMLImageElement | ImageData, options?: { threshold?: number }) => Promise<DetectorResult[]>;

@@ -1,4 +1,7 @@
 import type { Express } from "express";
+import { createRequire } from "node:module";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { Readable } from "node:stream";
 
 const MODEL_REPOSITORIES = [
@@ -6,9 +9,24 @@ const MODEL_REPOSITORIES = [
   "onnx-community/grounding-dino-tiny-ONNX/",
 ];
 const HUGGING_FACE_ORIGIN = "https://huggingface.co/";
+const require = createRequire(import.meta.url);
+const TRANSFORMERS_DIST = path.dirname(require.resolve("@huggingface/transformers"));
+const ORT_ASSETS = new Set(["ort-wasm-simd-threaded.jsep.mjs", "ort-wasm-simd-threaded.jsep.wasm"]);
+const OCR_ASSET_ROOT = existsSync(path.join(import.meta.dirname, "ocr-assets"))
+  ? path.join(import.meta.dirname, "ocr-assets")
+  : path.join(import.meta.dirname, "..", "desktop", "renderer", "public", "tesseract");
+const OCR_ASSETS = new Set(["worker.min.js", "tesseract-core-simd.wasm.js", "lang/eng.traineddata", "lang/ara.traineddata"]);
 
 export function isAllowedModelPath(requestPath: string) {
   return MODEL_REPOSITORIES.some((repository) => requestPath.startsWith(repository)) && !requestPath.includes("..");
+}
+
+export function isAllowedOrtAsset(asset: string) {
+  return ORT_ASSETS.has(asset);
+}
+
+export function isAllowedOcrAsset(asset: string) {
+  return OCR_ASSETS.has(asset);
 }
 
 /**
@@ -16,6 +34,28 @@ export function isAllowedModelPath(requestPath: string) {
  * in the browser; this route only makes public model downloads same-origin.
  */
 export function registerModelProxy(app: Express) {
+  app.get("/api/ort/:asset", (req, res) => {
+    const asset = req.params.asset;
+    if (!isAllowedOrtAsset(asset)) {
+      res.status(403).json({ error: "ONNX Runtime asset is not allowed" });
+      return;
+    }
+    res.setHeader("cache-control", "public, max-age=31536000, immutable");
+    res.setHeader("access-control-allow-origin", "*");
+    res.sendFile(path.join(TRANSFORMERS_DIST, asset));
+  });
+
+  app.get("/api/ocr/*", (req, res) => {
+    const asset = decodeURIComponent(req.originalUrl.split("?")[0].replace(/^\/api\/ocr\//, ""));
+    if (!isAllowedOcrAsset(asset)) {
+      res.status(403).json({ error: "OCR asset is not allowed" });
+      return;
+    }
+    res.setHeader("cache-control", "public, max-age=31536000, immutable");
+    res.setHeader("access-control-allow-origin", "*");
+    res.sendFile(path.join(OCR_ASSET_ROOT, asset));
+  });
+
   app.get("/api/model/*", async (req, res) => {
     try {
       const requestPath = decodeURIComponent(req.originalUrl.split("?")[0].replace(/^\/api\/model\//, ""));

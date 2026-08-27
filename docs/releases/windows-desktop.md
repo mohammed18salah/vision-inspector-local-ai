@@ -2,6 +2,10 @@
 
 This release introduces the Windows x64 desktop edition of Vision Inspector Local AI.
 
+## v1.2.2 reliability update
+
+The web application now serves ONNX Runtime and the OCR runtime from its own origin, removing the runtime dependency on a public CDN for those components. ONNX execution-provider placement notices are logged only at the error level, so a non-fatal diagnostic is no longer presented as an application error. The model outputs remain general-purpose predictions with confidence and candidate semantics; they are not a guarantee of exhaustive object detection.
+
 ## Included
 
 - Local image object detection, multi-scale detail recovery, and open-vocabulary candidates.

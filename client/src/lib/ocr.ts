@@ -18,7 +18,13 @@ let workerPromise: ReturnType<typeof createWorker> | null = null;
 
 function getWorker(onProgress?: (progress: number) => void) {
   if (!workerPromise) {
+    const assetUrl = (path: string) => new URL(`/api/ocr/${path}`, window.location.href).href;
     workerPromise = createWorker(["eng", "ara"], undefined, {
+      workerPath: assetUrl("worker.min.js"),
+      corePath: assetUrl("tesseract-core-simd.wasm.js"),
+      langPath: assetUrl("lang/"),
+      gzip: false,
+      cacheMethod: "none",
       logger: (message) => {
         if (typeof message.progress === "number") onProgress?.(message.progress);
       },

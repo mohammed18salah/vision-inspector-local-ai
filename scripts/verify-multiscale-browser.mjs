@@ -44,7 +44,7 @@ async function main() {
     await client.send("Emulation.setDeviceMetricsOverride", { width: 375, height: 812, deviceScaleFactor: 1, mobile: true });
   }
   await client.send("Page.addScriptToEvaluateOnNewDocument", {
-    source: `(() => { window.__visionErrors = []; window.__visionDownloads = []; const original = console.error; console.error = (...args) => { window.__visionErrors.push(args.map((item) => item instanceof Error ? item.stack || item.message : String(item)).join(' ')); original(...args); }; const originalCreateObjectURL = URL.createObjectURL.bind(URL); URL.createObjectURL = (blob) => { blob.text().then((text) => window.__visionDownloads.push({ type: blob.type, text })); return originalCreateObjectURL(blob); }; })()`,
+    source: `(() => { window.__visionErrors = []; window.__visionDownloads = []; const original = console.error; console.error = (...args) => { window.__visionErrors.push(args.map((item) => item instanceof Error ? item.stack || item.message : String(item)).join(' ')); original(...args); }; const originalCreateObjectURL = URL.createObjectURL.bind(URL); URL.createObjectURL = (blob) => { blob.text().then((text) => window.__visionDownloads.push({ type: blob.type, size: blob.size, preview: text.slice(0, 80) })); return originalCreateObjectURL(blob); }; })()`,
   });
   await client.send("Page.navigate", { url: targetUrl });
   await sleep(waitMs);
@@ -53,7 +53,7 @@ async function main() {
   });
   await sleep(400);
   const result = await client.send("Runtime.evaluate", {
-    expression: `(() => ({ status: document.querySelector('.analysis-state')?.textContent?.trim() ?? '', count: document.querySelectorAll('.real-box').length, results: [...document.querySelectorAll('.result-item')].map((item) => ({ label: item.querySelector('.result-label strong')?.textContent?.trim(), confidence: item.querySelector('.result-score')?.textContent?.trim() })), downloads: window.__visionDownloads ?? [], error: document.querySelector('.error-banner span')?.textContent?.trim() ?? '', consoleErrors: window.__visionErrors ?? [] }))()`,
+    expression: `(() => ({ status: document.querySelector('.analysis-state')?.textContent?.trim() ?? '', count: document.querySelectorAll('.real-box').length, results: [...document.querySelectorAll('.result-item')].map((item) => ({ label: item.querySelector('.result-label strong')?.textContent?.trim(), confidence: item.querySelector('.result-score')?.textContent?.trim() })), downloads: window.__visionDownloads ?? [], error: document.querySelector('.error-banner span')?.textContent?.trim() ?? '', runtimeRequests: performance.getEntriesByType('resource').map((entry) => entry.name).filter((name) => name.includes('/api/ort/') || name.includes('/api/ocr/') || name.includes('cdn.jsdelivr')).slice(-20), consoleErrors: window.__visionErrors ?? [] }))()`,
     returnByValue: true,
   });
   console.log(JSON.stringify(result.result.value, null, 2));

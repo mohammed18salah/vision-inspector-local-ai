@@ -25,6 +25,7 @@ import {
   FileImage,
   FileJson2,
   Gauge,
+  Github,
   ImagePlus,
   Loader2,
   Maximize2,
@@ -47,6 +48,8 @@ const MODEL_NAME = "YOLOS Tiny · local";
 const SMOKE_IMAGE = "/manus-storage/vision-inspector-reference_db9c3cb7.jpg";
 const MOUNTAIN_SMOKE_IMAGE = "/manus-storage/vision-inspector-mountain-multisubject-test_909f48e7.jpg";
 const SMOKE_VIDEO = "/manus-storage/vision-inspector-video-smoke_1b5f1d55.webm";
+const WINDOWS_DOWNLOAD_URL = "https://github.com/mohammed18salah/vision-inspector-local-ai/releases/download/v1.2.2/Vision.Inspector.Local.AI.Setup.1.2.2.exe";
+const REPOSITORY_URL = "https://github.com/mohammed18salah/vision-inspector-local-ai";
 const SAMPLE_IMAGES = [
   { label: "شارع وسيارات", url: "https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&w=1600&q=85" },
   { label: "شخص وحيوان", url: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1600&q=85" },
@@ -557,6 +560,7 @@ export default function Home() {
             <p className="section-eyebrow"><span className="eyebrow-dot" /> مساحة التحليل</p>
             <h1>{analysisMode === "video" ? "تتبّع واضح، " : "رؤية واضحة، "}<span>{analysisMode === "video" ? "من جهازك." : "من جهازك."}</span></h1>
             <p className="lede">{analysisMode === "video" ? "اختر فيديو من جهازك لتتبّع الكائنات بين الإطارات مع الإبقاء على صوت الفيديو الأصلي." : analysisMode === "image" ? "ارفع صورة. النموذج يعمل محليًا داخل المتصفح ويحدد الكيانات التي يراها مع درجة الثقة ومكانها." : "اختر نوع التحليل أولًا. يعمل كل شيء محليًا داخل متصفحك ولا تُرفع وسائطك إلى خادم خارجي."}</p>
+            <div className="project-links" aria-label="روابط المشروع"><a className="project-link project-link-primary" href={WINDOWS_DOWNLOAD_URL} target="_blank" rel="noreferrer"><Download size={15} />تنزيل تطبيق Windows</a><a className="project-link" href={REPOSITORY_URL} target="_blank" rel="noreferrer"><Github size={15} />المستودع على GitHub</a></div>
           </div>
           <div className="intro-model"><Cpu size={17} /><div><span>النموذج النشط</span><strong>{MODEL_NAME}</strong></div></div>
         </section>
