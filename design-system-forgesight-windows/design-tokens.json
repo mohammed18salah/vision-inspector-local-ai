@@ -1,0 +1,75 @@
+{
+  "meta": {
+    "name": "ForgeSight Windows",
+    "description": "A precision Windows 11-inspired local-AI workspace for Arabic-first media inspection.",
+    "version": "1.0.0",
+    "created": "2026-08-27",
+    "personality": "Calm precision rather than sci-fi spectacle. Frosted command surfaces frame a dark graphite inspection field, while electric azure and mineral lime communicate local computation, reliable detection, and device capability."
+  },
+  "colors": {
+    "canvas": { "value": "#101317", "usage": "Desktop app background and media-workspace surround." },
+    "surface": { "value": "#171B21", "usage": "Primary panels and navigation surfaces." },
+    "surface-raised": { "value": "#202630", "usage": "Hoverable cards, menus, and inspectors." },
+    "surface-selected": { "value": "#14304A", "usage": "Selected mode, active list item, and focused tool state." },
+    "glass": { "value": "rgba(32,38,48,0.76)", "usage": "Translucent command bar and floating controls." },
+    "primary": { "value": "#53B2FF", "usage": "Main actions, focus rings, links, and selected controls." },
+    "primary-hover": { "value": "#8DCCFF", "usage": "Hover state for primary interactions." },
+    "secondary": { "value": "#AAB4C3", "usage": "Secondary actions and inactive technical labels." },
+    "accent": { "value": "#A8E85A", "usage": "Local/GPU-ready states, successful detection, and privacy status." },
+    "warning": { "value": "#F4BE63", "usage": "Tentative detection, fallback, and caution states." },
+    "error": { "value": "#FF7D7B", "usage": "Decode, model, and file errors." },
+    "border": { "value": "#313945", "usage": "Panel dividers, inputs, and inactive control borders." },
+    "border-strong": { "value": "#4C5868", "usage": "Focused or selected input boundary." },
+    "text-primary": { "value": "#F3F7FB", "usage": "Headings, body copy, and important values." },
+    "text-secondary": { "value": "#AAB4C3", "usage": "Captions, technical metadata, and helper text." },
+    "text-muted": { "value": "#788394", "usage": "Disabled content and tertiary labels." },
+    "text-on-primary": { "value": "#06121F", "usage": "Text on azure primary controls." },
+    "overlay-box": { "value": "#6EC0FF", "usage": "Confirmed object bounding boxes." },
+    "overlay-tentative": { "value": "#F4BE63", "usage": "Candidate object bounding boxes." }
+  },
+  "typography": {
+    "font-display": { "family": "Changa", "fallback": "Segoe UI, sans-serif", "source": "https://fonts.googleapis.com/css2?family=Changa:wght@500;600;700&display=swap" },
+    "font-body": { "family": "Tajawal", "fallback": "Segoe UI, sans-serif", "source": "https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" },
+    "font-mono": { "family": "JetBrains Mono", "fallback": "Consolas, monospace", "source": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" },
+    "scale": {
+      "xs": { "size": "0.6875rem", "lineHeight": "1rem", "usage": "Status chips, table metadata, shortcut hints." },
+      "sm": { "size": "0.8125rem", "lineHeight": "1.25rem", "usage": "Labels, inspector metadata, supporting descriptions." },
+      "base": { "size": "0.9375rem", "lineHeight": "1.5rem", "usage": "Body text and standard controls." },
+      "lg": { "size": "1.125rem", "lineHeight": "1.625rem", "usage": "Panel titles and mode-card labels." },
+      "xl": { "size": "1.375rem", "lineHeight": "1.875rem", "usage": "Workspace section titles." },
+      "2xl": { "size": "1.75rem", "lineHeight": "2.25rem", "usage": "Page titles." },
+      "3xl": { "size": "2.25rem", "lineHeight": "2.75rem", "usage": "Welcome title in a maximized window." }
+    },
+    "weights": { "normal": 400, "medium": 500, "semibold": 600, "bold": 700 }
+  },
+  "spacing": {
+    "base-unit": "4px",
+    "scale": { "0": "0", "1": "0.25rem", "2": "0.5rem", "3": "0.75rem", "4": "1rem", "5": "1.25rem", "6": "1.5rem", "8": "2rem", "10": "2.5rem", "12": "3rem", "16": "4rem" }
+  },
+  "borders": {
+    "radius": { "sm": "6px", "md": "10px", "lg": "14px", "xl": "18px", "full": "9999px" },
+    "width": { "default": "1px", "focus": "2px" }
+  },
+  "shadows": {
+    "sm": { "value": "0 4px 14px rgba(0,0,0,.16)", "usage": "Inputs and small floating controls." },
+    "md": { "value": "0 14px 30px rgba(0,0,0,.22)", "usage": "Cards, inspector panels, and menus." },
+    "lg": { "value": "0 24px 60px rgba(0,0,0,.38)", "usage": "Dialogs and command palette." },
+    "glow": { "value": "0 0 0 3px rgba(83,178,255,.18)", "usage": "Keyboard focus and active analysis mode." }
+  },
+  "effects": {
+    "backdrop-blur": "blur(20px)",
+    "transition-fast": "150ms cubic-bezier(.2,.8,.2,1)",
+    "transition-default": "220ms cubic-bezier(.2,.8,.2,1)",
+    "reduced-motion": "Disable non-essential transforms and scan animation when prefers-reduced-motion is active."
+  },
+  "components": {
+    "button": {
+      "primary": { "bg": "primary", "text": "text-on-primary", "radius": "md", "padding": "spacing.3 spacing.4" },
+      "secondary": { "bg": "surface-raised", "text": "text-primary", "radius": "md", "border": "border" },
+      "ghost": { "bg": "transparent", "text": "text-secondary", "radius": "sm" }
+    },
+    "panel": { "bg": "surface", "radius": "lg", "shadow": "md", "border": "border", "padding": "spacing.5" },
+    "input": { "bg": "canvas", "border": "border", "radius": "md", "text": "text-primary", "focus-ring": "primary" },
+    "detection": { "confirmed": "overlay-box", "tentative": "overlay-tentative", "label-bg": "glass" }
+  }
+}

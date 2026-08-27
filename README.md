@@ -1,8 +1,16 @@
 # Vision Inspector Local AI
 
-**Vision Inspector Local AI** is an Arabic-first, right-to-left visual-analysis workspace that runs core inference directly in the browser. It supports image object detection, OCR, interactive bounding boxes, structured JSON/CSV export, and local video object tracking while leaving the original video audio available to the user.
+**Vision Inspector Local AI** is an Arabic-first, right-to-left visual-analysis workspace for the web and Windows. It supports image object detection, OCR, interactive bounding boxes, structured JSON/CSV export, and local video object tracking while leaving the original video audio available to the user.
 
-> The application is designed around local processing. Uploaded images and video frames are processed in the browser; the server only provides a constrained same-origin proxy for downloading public model files when the browser needs them.
+> The application is designed around local processing. Uploaded images, video frames, OCR results, detection boxes, tracking data, and exports stay on the device. The web server only provides a constrained model-download proxy. The Windows version accesses files through a native selection dialog and downloads public model artifacts only when they are missing from the local cache.
+
+## Screenshots
+
+| Web workspace | Windows desktop workspace | Windows completed local analysis |
+| --- | --- | --- |
+| ![Arabic RTL web workspace showing the organized image/video choice.](docs/screenshots/web-app-home.png) | ![ForgeSight Windows desktop workspace in its initial local-analysis state.](docs/screenshots/windows-desktop-home.png) | ![Electron capture of ForgeSight Windows after real local detection and OCR, showing five detections, boxes, OCR output, and local CPU/WASM state.](docs/screenshots/windows-desktop-analysis.png) |
+
+The screenshots show the real interfaces. The desktop captures come from the Electron window; they do not use a browser mockup or a static image inside the app.
 
 ## Capabilities
 
@@ -11,10 +19,11 @@
 | Image object detection | `Xenova/yolos-tiny` through Transformers.js, using WebGPU when available and WASM otherwise. |
 | Small and distant objects | A local multi-scale detail pass reviews overlapping image regions when the overview finds few objects. |
 | Open-vocabulary candidates | Local Grounding DINO pass for bird, turtle, and building candidates when the overview is sparse. Low-confidence results are explicitly marked as **tentative**. |
-| OCR | Arabic and English OCR with Tesseract.js, including confidence and word coordinates. |
+| OCR | Arabic and English OCR with bundled Tesseract.js worker/core and `eng`/`ara` language data, including confidence and word coordinates. |
 | Image inspection | Accurate `object-fit: contain` box layout, pan/zoom, focusable detections, and real image-region thumbnails. |
 | Result export | JSON and CSV downloads, including bounding boxes, OCR, model source, and `candidateLabel`/`tentative` fields where relevant. |
 | Video tracking | Local periodic frame analysis, IoU plus centre-proximity track matching, stable track IDs, and a canvas overlay above a native video player. |
+| Windows desktop | Electron desktop workspace with native file/save dialogs, local `vision-media://` file session protocol, device diagnostics, bundled ONNX Runtime/OCR assets, and a WebGPU-to-WASM/CPU inference fallback. |
 
 ## Quick start
 
@@ -23,6 +32,28 @@
 - Node.js 22 or later.
 - pnpm 9 or later.
 - A modern Chromium-based browser is recommended. WebGPU can improve inference speed; the app falls back to WASM when it is unavailable.
+
+### Run the Windows desktop app from source
+
+| Requirement | Notes |
+| --- | --- |
+| Operating system | Windows 10/11 x64 is the packaged-app target. The source UI can be developed on other Electron-supported systems. |
+| Runtime | Node.js 22 and pnpm 10. |
+| GPU | Optional. The app uses WebGPU only when an adapter is available and reports the engine used. Otherwise it uses local WASM/CPU. |
+| Storage | Free space is needed for the installer and the first downloaded vision-model cache. ONNX Runtime and Tesseract OCR resources are bundled; YOLOS and Grounding DINO weights download from their public repositories only when missing from the local cache. |
+
+```bash
+pnpm install
+pnpm desktop:dev
+```
+
+For a production installer on Windows:
+
+```bash
+pnpm desktop:pack:win
+```
+
+The installer is written to `release/`. For normal users, download the latest EXE and `SHA256SUMS.txt` from [GitHub Releases](https://github.com/mohammed18salah/vision-inspector-local-ai/releases), verify the checksum, and then run the installer.
 
 ### Install and run
 
@@ -39,6 +70,8 @@ Open the URL printed by Vite. Select **تحليل صورة** for image inspectio
 pnpm test
 pnpm check
 pnpm build
+pnpm desktop:check
+pnpm desktop:build
 ```
 
 ## Architecture
@@ -53,6 +86,13 @@ Browser
 
 Express server
 └── Allow-listed /api/model proxy for public model downloads only
+
+Windows desktop
+├── Electron main process: native file/save dialogs and device diagnostics
+├── Preload bridge: allow-listed IPC only, context isolation enabled
+├── React ForgeSight Windows workspace
+├── Bundled ONNX Runtime WASM and Tesseract worker/core/language data
+└── Local WebGPU when available → local WASM/CPU fallback
 ```
 
 The proxy only allows downloads from `Xenova/yolos-tiny` and `onnx-community/grounding-dino-tiny-ONNX`. It does not receive a user’s uploaded image or video data.
@@ -65,7 +105,7 @@ For best results, use well-lit source material with the object occupying a meani
 
 ## Privacy
 
-Images, video frames, inference outputs, OCR, and exports stay in the browser. The server route used by the app is restricted to serving model files from public model repositories so that the browser can load them reliably.
+Images, video frames, inference outputs, OCR, and exports stay in the browser or in the desktop application on the same device. The web server route is restricted to serving model files from public model repositories; the Windows application does not send user media to it. See [SECURITY.md](./SECURITY.md) for the desktop bridge and distribution model.
 
 ## Licenses and model notices
 
@@ -85,9 +125,12 @@ client/             React application and RTL interface
 server/             Express runtime and constrained model proxy
 scripts/            Reproducible browser and model validation scripts
 drizzle/            Database schema scaffold from the full-stack template
-shared/             Shared application types and constants
+shared/             Shared types, constants, and pure vision-core functions used by web and Windows
+desktop/            Electron main process, preload bridge, and ForgeSight Windows UI
+design-system-forgesight-windows/  Tokens, CSS, specification, and visual design-system preview
+docs/screenshots/    Real web and desktop screenshots used above
 ```
 
 ## Contributing
 
-Contributions are welcome. Please keep changes Arabic-first and RTL-aware, preserve the local-processing model, add or update tests for functional behavior, and run `pnpm test && pnpm check && pnpm build` before opening a pull request.
+Contributions are welcome. Please keep changes Arabic-first and RTL-aware, preserve the local-processing model, add or update tests for functional behavior, and run `pnpm test && pnpm check && pnpm build && pnpm desktop:check && pnpm desktop:build` before opening a pull request.
