@@ -99,7 +99,7 @@
 - [x] بناء تطبيق Electron Windows بواجهة عربية RTL مستقلة وآمنة مع اختيار صورة/فيديو وأدوات تشغيل محلية.
 - [x] تنفيذ طبقة استدلال Windows متكيفة تتحقق من WebGPU ثم تستخدم WASM/CPU محليًا عند عدم توفره، وتعرض المحرك المستخدم فعليًا؛ لا يوجد ادعاء بدعم DirectML أصلي.
 - [x] تحقيق تكافؤ وظيفي لكشف الكائنات وOCR وتصدير JSON/CSV وتتبّع الفيديو بين الويب وWindows، مع مشاركة `shared/vision-core.ts` للأنواع والدمج والتتبع والتصدير. طبقتا تشغيل النماذج وOCR منفصلتان عمدًا حسب بيئة الويب/Electron وتحققتا باختبارات Electron فعلية.
-- [ ] إضافة electron-builder وGitHub Actions لبناء EXE Windows x64 وإرفاق checksums في GitHub Release.
+- [x] إضافة electron-builder وGitHub Actions لبناء EXE Windows x64 وإرفاق checksums في GitHub Release. نجح إصدار `v1.1.5` ونُشر المثبّت وملف SHA-256، وتحققت المطابقة المستقلة بعد التنزيل.
 - [x] التقاط صور شاشة حقيقية للويب وسطح المكتب وتحديث README بإرشادات Windows والتراخيص والقيود، بما في ذلك لقطة Electron بعد تحليل حقيقي.
 - [x] تشغيل اختبارات الويب وسطح المكتب والتحقق من الحزمة قبل دفع commits وإصدار Windows: نجح `pnpm install --frozen-lockfile` و22 اختبارًا وفحصا TypeScript وبناء الويب وبناء Electron، وتحققت موارد ONNX/OCR المحلية في `desktop/dist/renderer`.
 - [x] إصلاح تنزيل نماذج سطح المكتب محليًا عبر وسيط Electron مقيد بعد ظهور خطأ Failed to fetch في تحليل صورة فعلي، وتعبئة ONNX Runtime وOCR محليًا. تحقق Electron من خمسة كائنات و789 كلمة OCR دون CDN وقت التشغيل لمحرك الاستدلال.
