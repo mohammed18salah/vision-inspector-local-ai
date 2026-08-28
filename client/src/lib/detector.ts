@@ -8,13 +8,9 @@ import type { VisionDetection } from "@shared/vision-core";
 env.allowLocalModels = false;
 env.allowRemoteModels = true;
 env.useBrowserCache = true;
-env.remoteHost = "/api/model/";
 env.backends.onnx.logLevel = "error";
 if (env.backends.onnx.wasm) {
   env.backends.onnx.wasm.numThreads = 1;
-  // Keep ONNX Runtime on the same origin as the application. This prevents
-  // inference from failing when a public CDN is blocked or unreachable.
-  env.backends.onnx.wasm.wasmPaths = typeof window === "undefined" ? "/api/ort/" : new URL("/api/ort/", window.location.href).href;
 }
 
 type DetectorResult = { score: number; label: string; box: { xmin: number; ymin: number; xmax: number; ymax: number } };
@@ -42,8 +38,8 @@ export function getInferenceDevice() {
 
 export function getDetectorErrorMessage(error: unknown) {
   const raw = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
-  if (raw.includes("failed to fetch") || raw.includes("network") || raw.includes("cors")) {
-    return "تعذر تنزيل ملفات النموذج. تحقق من الاتصال ثم أعد المحاولة؛ الصورة نفسها لم تُرفع إلى أي خدمة خارجية.";
+  if (raw.includes("failed to fetch") || raw.includes("network") || raw.includes("cors") || raw.includes("internal server error") || raw.includes("500") || raw.includes("502")) {
+    return "تعذر تنزيل ملفات النموذج. تحقق من الاتصال بالإنترنت ثم أعد المحاولة؛ الصورة نفسها تُعالج محليًا.";
   }
   if (raw.includes("webgpu") || raw.includes("execution provider")) {
     return "لم يستطع المتصفح تشغيل WebGPU. سيعمل النظام على WASM تلقائيًا، أو جرّب Chrome/Edge محدثًا.";
@@ -65,6 +61,7 @@ export async function loadDetector(onProgress?: ProgressCallback) {
           progress_callback: onProgress,
         }) as unknown as Detector;
       } catch (error) {
+        console.warn("[Vision Inspector] Primary inference device load failed, falling back to WASM:", error);
         if (activeDevice !== "webgpu") throw error;
         activeDevice = "wasm";
         return await pipeline("object-detection", MODEL_ID, {
@@ -73,7 +70,10 @@ export async function loadDetector(onProgress?: ProgressCallback) {
           progress_callback: onProgress,
         }) as unknown as Detector;
       }
-    })();
+    })().catch((err) => {
+      detectorPromise = null;
+      throw err;
+    });
   }
   return detectorPromise;
 }

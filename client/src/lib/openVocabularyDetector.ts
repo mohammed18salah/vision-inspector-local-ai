@@ -4,18 +4,21 @@ import type { LocalDetection } from "./detector";
 env.allowLocalModels = false;
 env.allowRemoteModels = true;
 env.useBrowserCache = true;
-env.remoteHost = "/api/model/";
 env.backends.onnx.logLevel = "error";
 
 const MODEL_ID = "onnx-community/grounding-dino-tiny-ONNX";
-// YOLOS handles people and vehicles in the primary pass. This detailed pass
-// deliberately targets the requested long-tail classes only.
+// Primary categories plus disaster rescue / occluded human detection queries
 const CANDIDATE_LABELS = [
+  { query: "a person.", threshold: 0.3 },
+  { query: "a person trapped under rubble.", threshold: 0.2 },
+  { query: "a human body or limb in debris.", threshold: 0.2 },
+  { query: "a person partially visible.", threshold: 0.2 },
   { query: "a bird.", threshold: 0.35 },
   { query: "a turtle.", threshold: 0.4 },
-  { query: "a building.", threshold: 0.5 },
+  { query: "a building.", threshold: 0.45 },
+  { query: "a vehicle.", threshold: 0.35 },
 ];
-export const OPEN_VOCABULARY_CONFIRMED_CONFIDENCE = 50;
+export const OPEN_VOCABULARY_CONFIRMED_CONFIDENCE = 45;
 
 type DetectorResult = { score: number; label: string; box: { xmin: number; ymin: number; xmax: number; ymax: number } };
 type OpenVocabularyDetector = (image: RawImage, labels: string[], options?: { threshold?: number; top_k?: number }) => Promise<DetectorResult[]>;
@@ -24,16 +27,24 @@ let detectorPromise: Promise<OpenVocabularyDetector> | null = null;
 
 async function loadOpenVocabularyDetector(onProgress?: ProgressCallback) {
   if (!detectorPromise) {
-    detectorPromise = pipeline("zero-shot-object-detection", MODEL_ID, {
-      device: "wasm",
-      progress_callback: onProgress,
-    }) as unknown as Promise<OpenVocabularyDetector>;
+    detectorPromise = (async () => {
+      return await pipeline("zero-shot-object-detection", MODEL_ID, {
+        device: "wasm",
+        progress_callback: onProgress,
+      }) as unknown as OpenVocabularyDetector;
+    })().catch((err) => {
+      detectorPromise = null;
+      throw err;
+    });
   }
   return detectorPromise;
 }
 
 export function normalizeOpenVocabularyLabel(label: string) {
   const normalized = label.replace(/^an?\s+/i, "").replace(/\.$/, "").trim().toLowerCase();
+  if (normalized.includes("person") || normalized.includes("human") || normalized.includes("body") || normalized.includes("limb") || normalized.includes("rubble") || normalized.includes("debris")) {
+    return "person";
+  }
   const knownLabels = ["person", "bird", "turtle", "building", "car", "dog", "cat", "animal", "tree", "vehicle"];
   return (knownLabels.find((knownLabel) => normalized.includes(knownLabel)) ?? normalized) || "unknown";
 }

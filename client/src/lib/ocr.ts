@@ -24,16 +24,30 @@ const OCR_RUNTIME_BASE = import.meta.env.DEV ? "/api/ocr/" : "/ocr-assets/";
 function getWorker(onProgress?: (progress: number) => void) {
   if (!workerPromise) {
     const assetUrl = (path: string) => new URL(`${OCR_RUNTIME_BASE}${path}`, window.location.href).href;
-    workerPromise = createWorker(["eng", "ara"], undefined, {
-      workerPath: assetUrl("worker.min.js"),
-      corePath: assetUrl("tesseract-core-simd.wasm.js"),
-      langPath: assetUrl("lang/"),
-      gzip: false,
-      // Use IndexedDB cache so language model data is not re-downloaded on every page load.
-      cacheMethod: "write",
-      logger: (message) => {
-        if (typeof message.progress === "number") onProgress?.(message.progress);
-      },
+    workerPromise = (async () => {
+      try {
+        return await createWorker(["eng", "ara"], undefined, {
+          workerPath: assetUrl("worker.min.js"),
+          corePath: assetUrl("tesseract-core-simd.wasm.js"),
+          langPath: assetUrl("lang/"),
+          gzip: false,
+          cacheMethod: "write",
+          logger: (message) => {
+            if (typeof message.progress === "number") onProgress?.(message.progress);
+          },
+        });
+      } catch (localError) {
+        console.warn("[Vision Inspector] Local OCR worker assets failed, falling back to official CDN:", localError);
+        return await createWorker(["eng", "ara"], undefined, {
+          cacheMethod: "write",
+          logger: (message) => {
+            if (typeof message.progress === "number") onProgress?.(message.progress);
+          },
+        });
+      }
+    })().catch((err) => {
+      workerPromise = null;
+      throw err;
     });
   }
   return workerPromise;
