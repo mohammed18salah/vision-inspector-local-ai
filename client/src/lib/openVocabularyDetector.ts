@@ -55,16 +55,31 @@ export function isOpenVocabularyCandidate(confidence: number) {
 
 export async function detectOpenVocabularyObjects(
   image: HTMLImageElement | RawImage,
-  options: { onProgress?: ProgressCallback; onCategoryProgress?: (completed: number, total: number) => void } = {},
+  options: {
+    rescueMode?: boolean;
+    onProgress?: ProgressCallback;
+    onCategoryProgress?: (completed: number, total: number) => void;
+  } = {},
 ): Promise<LocalDetection[]> {
   const detector = await loadOpenVocabularyDetector(options.onProgress);
   const rawImage = image instanceof RawImage ? image : await RawImage.fromURL(image.src);
   const result: DetectorResult[] = [];
-  for (let index = 0; index < CANDIDATE_LABELS.length; index += 1) {
-    const candidate = CANDIDATE_LABELS[index]!;
-    const matches = await detector(rawImage, [candidate.query], { threshold: candidate.threshold, top_k: 1 });
+  const labelsToScan = options.rescueMode
+    ? [
+        { query: "a person trapped under rubble.", threshold: 0.15 },
+        { query: "a human body or limb in debris.", threshold: 0.15 },
+        { query: "a person partially visible.", threshold: 0.16 },
+        { query: "a person.", threshold: 0.2 },
+        { query: "a building.", threshold: 0.35 },
+        { query: "a vehicle.", threshold: 0.3 },
+      ]
+    : CANDIDATE_LABELS;
+
+  for (let index = 0; index < labelsToScan.length; index += 1) {
+    const candidate = labelsToScan[index]!;
+    const matches = await detector(rawImage, [candidate.query], { threshold: candidate.threshold, top_k: 2 });
     result.push(...matches);
-    options.onCategoryProgress?.(index + 1, CANDIDATE_LABELS.length);
+    options.onCategoryProgress?.(index + 1, labelsToScan.length);
   }
   const width = rawImage.width;
   const height = rawImage.height;
@@ -81,7 +96,7 @@ export async function detectOpenVocabularyObjects(
         width: ((item.box.xmax - item.box.xmin) / width) * 100,
         height: ((item.box.ymax - item.box.ymin) / height) * 100,
       },
-      sourceModel: "Grounding DINO Tiny · local",
+      sourceModel: options.rescueMode ? "Grounding DINO · Rescue Mode" : "Grounding DINO Tiny · local",
       isUnknown: label === "unknown" || isOpenVocabularyCandidate(confidence),
     };
   });

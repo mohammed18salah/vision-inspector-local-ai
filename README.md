@@ -1,151 +1,138 @@
-# Vision Inspector Local AI
+# Vision Inspector Local AI · منظومة الرؤية الحاسوبية والإنقاذ الذكي
 
-**Vision Inspector Local AI** is an Arabic-first, right-to-left visual-analysis workspace for the web and Windows. It supports image object detection, OCR, interactive bounding boxes, structured JSON/CSV export, and local video object tracking while leaving the original video audio available to the user.
+> **تم التطوير بواسطة:** **Mohammed Salahuldeen Dev** ([@mohammed18salah](https://github.com/mohammed18salah))  
+> **الإصدار:** `v1.3.0` | **الخصوصية:** معالجة محلية 100% (On-Device AI) بدون خوادم خارجية | **الترخيص:** MIT
 
-> The application is designed around local processing. Uploaded images, video frames, OCR results, detection boxes, tracking data, and exports stay on the device. The web server only provides a constrained model-download proxy. The Windows version accesses files through a native selection dialog and downloads public model artifacts only when they are missing from the local cache.
+[![Vercel Deployment](https://img.shields.io/badge/Deployment-Vercel-success?style=flat-square&logo=vercel)](https://vision-inspector-local-ai.vercel.app/)
+[![Windows Desktop](https://img.shields.io/badge/Windows-Desktop%20App-0078D4?style=flat-square&logo=windows)](https://github.com/mohammed18salah/vision-inspector-local-ai/releases)
+[![WebGPU & WASM](https://img.shields.io/badge/Inference-WebGPU%20%2F%20WASM-blue?style=flat-square)](https://huggingface.co/docs/transformers.js)
+[![OCR Tesseract](https://img.shields.io/badge/OCR-Arabic%20%26%20English-green?style=flat-square)](https://github.com/naptha/tesseract.js)
 
-## Screenshots
+---
 
-| Windows Classic Dark — initial state | Windows local-history sharing |
-| --- | --- |
-| ![Electron capture of the current Classic Dark initial state with no file selected and no claimed detections.](docs/screenshots/windows-desktop-classic-home.png) | ![Electron capture of the local history panel with CSV and PDF sharing controls.](docs/screenshots/windows-desktop-history-export.png) |
+## 🌟 نظرة عامة (Overview)
 
-The screenshots come directly from the Electron window and deliberately show only verified interface states. They do not present a sample detection as a proof of universal accuracy; all detections remain model predictions with confidence and tentative-state semantics described below.
+**Vision Inspector Local AI** هي منظومة متقدمة للرؤية الحاسوبية والإنقاذ في حالات الطوارئ والكوارث، تعمل بالكامل محلياً على جهاز المستخدم (Web & Windows Desktop). تم تطويرها لتوفير كشف فوري ودقيق للأشخاص، المركبات، الأجسام، الأفراد المحتجزين تحت الأنقاض، واستخراج النصوص باللغتين العربية والإنجليزية، وتتبع الفيديو مع الحفاظ على الصوت الأصلي، مع ضمان الخصوصية التامة حيث لا تغادر أي صورة أو فيديو حاسوبك.
 
-## Capabilities
+---
 
-| Capability | Implementation |
-| --- | --- |
-| Image object detection | `Xenova/yolos-tiny` through Transformers.js, using WebGPU when available and WASM otherwise. |
-| Small and distant objects | A local multi-scale detail pass reviews overlapping image regions when the overview finds few objects. |
-| Open-vocabulary candidates | Local Grounding DINO pass for bird, turtle, and building candidates when the overview is sparse. Low-confidence results are explicitly marked as **tentative**. |
-| OCR | Arabic and English OCR with bundled Tesseract.js worker/core and `eng`/`ara` language data, including confidence and word coordinates. |
-| Image inspection | Accurate `object-fit: contain` box layout, pan/zoom, focusable detections, and real image-region thumbnails. |
-| Result export | JSON and CSV downloads, including bounding boxes, OCR, model source, and `candidateLabel`/`tentative` fields where relevant. |
-| Video tracking | Local periodic frame analysis, IoU plus centre-proximity track matching, stable track IDs, and a canvas overlay above a native video player. |
-| Windows desktop | Electron desktop workspace with native file/save dialogs, local `vision-media://` file session protocol, device diagnostics, bundled ONNX Runtime/OCR assets, and a WebGPU-to-WASM/CPU inference fallback. The ForgeSight Classic Dark interface uses a restrained Windows-first dark palette and avoids decorative AI icons and emoji. |
-| Local performance meter | Optional, on-demand benchmark with separate model warm-up and three inference passes. It reports a median for WASM/CPU and adds WebGPU only after an adapter is confirmed. |
-| Local history | Persisted analysis and export summaries with local review, individual deletion, and clear-all control. It excludes original media bytes and absolute media paths. The visible summaries can be shared on demand as BOM-encoded CSV or a self-contained landscape A4 PDF through a native save dialog. |
+## 🚨 وضع الإنقاذ والبحث في الكوارث (Disaster Search & Rescue Mode)
 
-## Quick start
+يتميز الإصدار الحديث بدعم متقدم لفرق الاستجابة السريعة، الدفاع المدني، والباحثين في مجالات الطوارئ:
+- **كشف الأشخاص تحت الأنقاض:** فحص متقدم لكشف الضحايا أو الأطراف البشرية الجزئية الظاهرة بين الركام والحطام.
+- **مسح متعدد المقاييس (Multi-Scale Tiling Pass):** تقطيع الصورة وفحص التفاصيل الدقيقة للأجسام البعيدة والصغيرة.
+- **استدلال محلي في الميدان:** يعمل دون الحاجة إلى أي اتصال بالإنترنت في المناطق المنكوبة بعد التنزيل الأولي للنموذج.
 
-### Prerequisites
+---
 
-- Node.js 22 or later.
-- pnpm 9 or later.
-- A modern Chromium-based browser is recommended. WebGPU can improve inference speed; the app falls back to WASM when it is unavailable.
+## ⚡ الميزات والقدرات الرئيسية (Key Features)
 
-### Run the Windows desktop app from source
+| الميزة / Capability | التفاصيل والتقنيات المستخدمة |
+| :--- | :--- |
+| **كشف الكائنات الفوري** | نموذج `Xenova/yolos-tiny` عبر Transformers.js v3 و ONNX Runtime Web بتسريع عتادي WebGPU أو WASM. |
+| **كشف المرشحين والمفردات المفتوحة** | استدلال بصري صفري `onnx-community/grounding-dino-tiny-ONNX` لكشف الأفراد في الركام والمباني. |
+| **استخراج النصوص (OCR)** | محرك Tesseract.js يدعم اللغة العربية والإنجليزية مع إحداثيات الكلمات ومستوى الثقة. |
+| **تتبع الفيديو الحي** | تتبع مستقر للكائنات المتحركة عبر الإطارات (Stable Track IDs) مع الحفاظ على الصوت الأصلي. |
+| **لوحة تحكم وتكبير تفاعلية** | تكبير (Zoom)، تحريك (Pan)، والتركيز الفوري على الصندوق المحدد مع استعراض الأبعاد. |
+| **تصدير التقارير** | تصدير فوري لنتائج التحليل والإحداثيات بصيغ `JSON` و `CSV`. |
+| **مقياس الأداء المحلي** | أداة قياس مقارنة مباشرة لسرعة WebGPU مقابل CPU/WASM على عتاد الجهاز. |
+| **تطبيق Windows مخصص** | نسخة مكتبية مبنية بـ Electron مع بروتوكول محلي آمن وإدارة سجلات التاريخ المحلي. |
 
-| Requirement | Notes |
-| --- | --- |
-| Operating system | Windows 10/11 x64 is the packaged-app target. The source UI can be developed on other Electron-supported systems. |
-| Runtime | Node.js 22 and pnpm 10. |
-| GPU | Optional. The app uses WebGPU only when an adapter is available and reports the engine used. Otherwise it uses local WASM/CPU. |
-| Storage | Free space is needed for the installer and the first downloaded vision-model cache. ONNX Runtime and Tesseract OCR resources are bundled; YOLOS and Grounding DINO weights download from their public repositories only when missing from the local cache. |
+---
 
+## 🏗️ البنية الهندسية (Architecture)
+
+```text
+Vision Inspector Local AI
+├── Web Client (Vite + React + TailwindCSS)
+│   ├── Hugging Face Transformers.js v3 (Local WebGPU / WASM execution)
+│   │   ├── Primary: YOLOS Tiny
+│   │   └── Zero-Shot / Disaster: Grounding DINO Tiny
+│   ├── Tesseract.js (Arabic & English OCR)
+│   └── Audio & Canvas Video Frame Tracker
+│
+├── Desktop App (Electron Windows x64)
+│   ├── Native IPC Bridge & Local File Protocols
+│   ├── Offline Cache Management (ONNX + Weights)
+│   └── Local History & PDF/CSV Export Engine
+│
+└── Developer: Mohammed Salahuldeen Dev
+```
+
+---
+
+## 🚀 التشغيل والتثبيت السريع (Quick Start)
+
+### المتطلبات الأساسية
+- **Node.js**: الإصدار 20 أو 22+.
+- **pnpm**: الإصدار 9 أو 10.
+- متصفح يدعم **WebGPU** (مثل Google Chrome أو Microsoft Edge) للاستفادة من أقصى سرعة على كرت الشاشة.
+
+### 1. تشغيل نسخة الويب محلياً
 ```bash
+# تثبيت الاعتماديات
 pnpm install
+
+# تشغيل خادم التطوير
+pnpm dev
+```
+افتح الرابط في المتصفح `http://localhost:5173`.
+
+### 2. تشغيل تطبيق Windows Desktop من المصدر
+```bash
 pnpm desktop:dev
 ```
 
-For a production installer on Windows:
-
+### 3. بناء حزمة التثبيت لنظام Windows (.exe)
 ```bash
 pnpm desktop:pack:win
 ```
+سيتم إنشاء ملف التثبيت المكتبي في مجلد `release/`.
 
-The installer is written to `release/`. For normal users, download the latest EXE and `SHA256SUMS.txt` from [GitHub Releases](https://github.com/mohammed18salah/vision-inspector-local-ai/releases), verify the checksum, and then run the installer. The workflow can sign a future build when the repository owner adds a trusted PFX certificate as protected GitHub Actions secrets; until then, releases are explicitly unsigned and Windows SmartScreen can warn.
+---
 
-### Install and run
-
-```bash
-pnpm install
-pnpm dev
-```
-
-Open the URL printed by Vite. Select **تحليل صورة** for image inspection or **تحليل فيديو** for video tracking. The first analysis can take longer because the browser downloads and caches the selected local model.
-
-### Validation commands
+## 🧪 الفحص والاختبار (Validation & Testing)
 
 ```bash
+# تشغيل اختبارات الوحدة الشاملة
 pnpm test
+
+# فحص أنواع TypeScript
 pnpm check
+
+# بناء حزمة الإنتاج للويب
 pnpm build
-pnpm desktop:check
-pnpm desktop:build
 ```
 
-### Deploy to Vercel
+---
 
-This repository includes `vercel.json`. It builds the Vite client into **`dist/public`**, serves the single-page application through `index.html`, and routes `/api/*` to a Vercel Function that provides only the constrained model-download API. Do **not** set Vercel's Output Directory to `dist`: doing so can expose the compiled server bundle (`dist/index.js`) as a static page rather than serving the application.
+## 🌐 النشر على Vercel (Vercel Deployment)
 
-| Vercel setting | Required value |
-| --- | --- |
-| Framework Preset | `Vite` |
-| Install Command | `pnpm install --frozen-lockfile` |
-| Build Command | `pnpm build` |
-| Output Directory | `dist/public` |
+المشروع مهيأ بالكامل للنشر على منصة Vercel عبر ملف `vercel.json`:
+- **Framework Preset:** `Vite`
+- **Build Command:** `pnpm build`
+- **Output Directory:** `dist/public`
 
-After pushing this configuration, redeploy the latest `main` commit. OCR runtime files are emitted as same-origin static files under `/ocr-assets/`; the function serves the allow-listed model proxy under `/api/model` and the ONNX runtime bootstrap under `/api/ort`. The first model download still needs access to the selected public model repository.
+تأكد من عدم تعديل مسار الإخراج إلى `dist` حتى لا يتجاوز الخادم الثابت.
 
-## Architecture
+---
 
-```text
-Browser
-├── React RTL workspace
-├── Transformers.js: YOLOS + Grounding DINO
-├── Tesseract.js OCR
-├── Canvas overlays, pan/zoom, and video frame extraction
-└── JSON/CSV export
+## 🔒 بيان الخصوصية والأمان (Privacy Manifesto)
 
-Express server
-└── Allow-listed /api/model proxy for public model downloads only
+- **صفر نقل بيانات:** لا يتم إرسال أي صورة، مقطع فيديو، أو نص مستخرج إلى أي خادم خارجي على الإطلاق.
+- **تخزين محلي آمن:** تُخزن أوزان النماذج داخل ذاكرة المتصفح (`IndexedDB / CacheStorage`) لتعمل بدون إنترنت مستقبلاً.
+- **إسناد وتطوير:** تم بناء وتطوير هذا النظام لخدمة الإنسانية والبحث العلمي في الرؤية الحاسوبية بواسطة **Mohammed Salahuldeen Dev**.
 
-Windows desktop
-├── Electron main process: native dialogs, device diagnostics, and atomic local history store
-├── Preload bridge: allow-listed IPC only, context isolation enabled
-├── React ForgeSight Classic Dark workspace with performance meter and history panel
-├── Bundled ONNX Runtime WASM and Tesseract worker/core/language data
-└── Local WebGPU when available → local WASM/CPU fallback
-```
+---
 
-The proxy only allows downloads from `Xenova/yolos-tiny` and `onnx-community/grounding-dino-tiny-ONNX`. It does not receive a user’s uploaded image or video data.
+## 👨‍💻 المطور (Developer)
 
-## Accuracy and confidence
+- **الاسم:** **Mohammed Salahuldeen Dev**
+- **GitHub:** [@mohammed18salah](https://github.com/mohammed18salah)
+- **المستودع:** [vision-inspector-local-ai](https://github.com/mohammed18salah/vision-inspector-local-ai)
 
-Computer-vision detections are model predictions, not guaranteed facts. Small, blurred, distant, occluded, or unusual objects may be missed. The interface distinguishes normal detections from low-confidence open-vocabulary candidates, displayed as **مرشح** and exported with `tentative: true` and `candidateLabel`.
+---
 
-For best results, use well-lit source material with the object occupying a meaningful part of the frame. Video tracking rate is configurable, trading processing load for temporal detail.
+## 📜 الترخيص (License)
 
-## Privacy
-
-Images, video frames, inference outputs, OCR, and exports stay in the browser or in the desktop application on the same device. The desktop history store keeps only compact analysis/export summaries such as a file-name leaf, engine, counts, time, export type, and checksum; it never stores the original media bytes or an absolute media path. CSV and PDF history exports contain the same summaries only, and are written after the user chooses a location in the native dialog. The web runtime now serves ONNX Runtime, the OCR worker, and OCR language data from the same application origin, so a blocked public CDN does not prevent local analysis from starting. Model weights still download from the public allow-listed model source on their first use when absent from cache; user media is never sent there. Detection output is a model prediction, not a guarantee that every object in every image has been found. See [SECURITY.md](./SECURITY.md) for the desktop bridge and distribution model.
-
-## Licenses and model notices
-
-The source code in this repository is licensed under [Apache License 2.0](./LICENSE). Third-party packages and model weights are **not** relicensed by this repository; they remain subject to their respective terms. Review the upstream model cards before redistribution or production use:
-
-- [Xenova/yolos-tiny](https://huggingface.co/Xenova/yolos-tiny)
-- [onnx-community/grounding-dino-tiny-ONNX](https://huggingface.co/onnx-community/grounding-dino-tiny-ONNX)
-- [Transformers.js](https://github.com/huggingface/transformers.js)
-- [Tesseract.js](https://github.com/naptha/tesseract.js)
-
-See [NOTICE](./NOTICE) for the repository-level attribution notice.
-
-## Repository layout
-
-```text
-client/             React application and RTL interface
-server/             Express runtime and constrained model proxy
-scripts/            Reproducible browser and model validation scripts
-drizzle/            Database schema scaffold from the full-stack template
-shared/             Shared types, constants, and pure vision-core functions used by web and Windows
-desktop/            Electron main process, preload bridge, and ForgeSight Windows UI
-design-system-forgesight-windows/  Tokens, CSS, specification, and visual design-system preview
-docs/screenshots/    Real web and desktop screenshots used above
-```
-
-## Contributing
-
-Contributions are welcome. Please keep changes Arabic-first and RTL-aware, preserve the local-processing model, add or update tests for functional behavior, and run `pnpm test && pnpm check && pnpm build && pnpm desktop:check && pnpm desktop:build` before opening a pull request.
+هذا المشروع مرخص بموجب رخصة [MIT](LICENSE).

@@ -129,16 +129,39 @@ export async function detectObjects(image: HTMLImageElement | RawImage, onProgre
   return resultToDetections(await detector(raw, { threshold: 0.18 }), raw.width, raw.height, "YOLOS Tiny · local").sort((a, b) => b.confidence - a.confidence);
 }
 
-const candidateLabels = [{ query: "a bird.", threshold: .35 }, { query: "a turtle.", threshold: .4 }, { query: "a building.", threshold: .5 }];
-function normalizeOpenLabel(label: string) { return (label.match(/bird|turtle|building/i)?.[0] ?? label.replace(/^an?\s+/i, "").replace(/\.$/, "")).toLowerCase(); }
+const candidateLabels = [
+  { query: "a person.", threshold: 0.3 },
+  { query: "a person trapped under rubble.", threshold: 0.18 },
+  { query: "a human body or limb in debris.", threshold: 0.18 },
+  { query: "a person partially visible.", threshold: 0.2 },
+  { query: "a building.", threshold: 0.4 },
+  { query: "a vehicle.", threshold: 0.35 },
+  { query: "a bird.", threshold: 0.35 },
+  { query: "a turtle.", threshold: 0.4 },
+];
 
-export async function detectOpenCandidates(image: HTMLImageElement | RawImage, onProgress?: ProgressCallback) {
+function normalizeOpenLabel(label: string) {
+  const clean = label.replace(/^an?\s+/i, "").replace(/\.$/, "").trim().toLowerCase();
+  if (clean.includes("person") || clean.includes("human") || clean.includes("body") || clean.includes("limb") || clean.includes("rubble") || clean.includes("debris")) {
+    return "person";
+  }
+  return (clean.match(/bird|turtle|building|car|vehicle|dog|cat/i)?.[0] ?? clean).toLowerCase();
+}
+
+export async function detectOpenCandidates(image: HTMLImageElement | RawImage, onProgress?: ProgressCallback, rescueMode = false) {
   const raw = image instanceof RawImage ? image : await RawImage.fromURL(image.src);
   if (!openPromise) openPromise = pipeline("zero-shot-object-detection", "onnx-community/grounding-dino-tiny-ONNX", { device: "wasm", progress_callback: onProgress }) as unknown as Promise<OpenDetector>;
   const detector = await openPromise;
   const results: ModelOutput[] = [];
-  for (const candidate of candidateLabels) results.push(...await detector(raw, [candidate.query], { threshold: candidate.threshold, top_k: 1 }));
-  return resultToDetections(results.map((item) => ({ ...item, label: normalizeOpenLabel(item.label) })), raw.width, raw.height, "Grounding DINO Tiny · local", true);
+  const activeQueries = rescueMode
+    ? candidateLabels.filter((c) => c.query.includes("person") || c.query.includes("human") || c.query.includes("building") || c.query.includes("debris"))
+    : candidateLabels;
+
+  for (const candidate of activeQueries) {
+    const threshold = rescueMode && (candidate.query.includes("rubble") || candidate.query.includes("debris")) ? 0.15 : candidate.threshold;
+    results.push(...await detector(raw, [candidate.query], { threshold, top_k: 2 }));
+  }
+  return resultToDetections(results.map((item) => ({ ...item, label: normalizeOpenLabel(item.label) })), raw.width, raw.height, rescueMode ? "Grounding DINO · Rescue Mode" : "Grounding DINO Tiny · local", true);
 }
 
 export async function recognizeText(image: HTMLImageElement, onProgress?: (value: number) => void): Promise<OcrResult> {

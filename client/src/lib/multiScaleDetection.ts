@@ -54,12 +54,18 @@ function projectTileDetection(detection: LocalDetection, tile: DetailTile, image
 export async function detectImageWithDetailPass(
   image: HTMLImageElement,
   options: {
+    threshold?: number;
+    rescueMode?: boolean;
     onProgress?: ProgressCallback;
     onDetailProgress?: (completedTiles: number, totalTiles: number) => void;
   } = {},
 ) {
-  const overview = await detectObjects(image, { threshold: 0.18, onProgress: options.onProgress });
-  if (overview.length >= DETAIL_TRIGGER_RESULT_COUNT || image.naturalWidth < 720 || image.naturalHeight < 720) {
+  const baseThreshold = options.threshold ?? (options.rescueMode ? 0.12 : 0.18);
+  const overview = await detectObjects(image, { threshold: baseThreshold, onProgress: options.onProgress });
+  
+  // In rescue mode, always perform detail tile scanning to find occluded people / limbs
+  const shouldSkipTiles = !options.rescueMode && (overview.length >= DETAIL_TRIGGER_RESULT_COUNT || image.naturalWidth < 600 || image.naturalHeight < 600);
+  if (shouldSkipTiles) {
     return mergeDetections(overview);
   }
 
@@ -69,7 +75,7 @@ export async function detectImageWithDetailPass(
     for (let index = 0; index < tiles.length; index += 1) {
       const tile = tiles[index]!;
       const tileImage = cropImage(image, tile);
-      const tileDetections = await detectObjects(tileImage, { threshold: 0.16 });
+      const tileDetections = await detectObjects(tileImage, { threshold: options.rescueMode ? 0.11 : 0.16 });
       detailed.push(...tileDetections.map((detection) => projectTileDetection(detection, tile, image.naturalWidth, image.naturalHeight)));
       options.onDetailProgress?.(index + 1, tiles.length);
     }
