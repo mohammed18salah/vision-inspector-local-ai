@@ -9,13 +9,42 @@ const MODEL_REPOSITORIES = [
   "onnx-community/grounding-dino-tiny-ONNX/",
 ];
 const HUGGING_FACE_ORIGIN = "https://huggingface.co/";
-const require = createRequire(import.meta.url);
-const TRANSFORMERS_DIST = path.dirname(require.resolve("@huggingface/transformers"));
 const ORT_ASSETS = new Set(["ort-wasm-simd-threaded.jsep.mjs", "ort-wasm-simd-threaded.jsep.wasm"]);
-const OCR_ASSET_ROOT = existsSync(path.join(import.meta.dirname, "ocr-assets"))
-  ? path.join(import.meta.dirname, "ocr-assets")
-  : path.join(import.meta.dirname, "..", "desktop", "renderer", "public", "tesseract");
 const OCR_ASSETS = new Set(["worker.min.js", "tesseract-core-simd.wasm.js", "lang/eng.traineddata", "lang/ara.traineddata"]);
+
+/**
+ * Lazily resolved paths — safe to initialize to null in serverless environments
+ * where node module resolution from source paths may not be available.
+ */
+let _transformersDist: string | null = null;
+let _ocrAssetRoot: string | null = null;
+
+function getTransformersDist(): string | null {
+  if (_transformersDist !== null) return _transformersDist;
+  try {
+    const req = createRequire(import.meta.url);
+    const resolved = req.resolve("@huggingface/transformers");
+    _transformersDist = path.dirname(resolved);
+  } catch {
+    _transformersDist = null;
+  }
+  return _transformersDist;
+}
+
+function getOcrAssetRoot(): string | null {
+  if (_ocrAssetRoot !== null) return _ocrAssetRoot;
+  try {
+    // import.meta.dirname may be unavailable in some serverless runtimes
+    const dirname: string | undefined = (import.meta as Record<string, unknown>).dirname as string | undefined;
+    if (!dirname) return null;
+    _ocrAssetRoot = existsSync(path.join(dirname, "ocr-assets"))
+      ? path.join(dirname, "ocr-assets")
+      : path.join(dirname, "..", "desktop", "renderer", "public", "tesseract");
+  } catch {
+    _ocrAssetRoot = null;
+  }
+  return _ocrAssetRoot;
+}
 
 export function isAllowedModelPath(requestPath: string) {
   return MODEL_REPOSITORIES.some((repository) => requestPath.startsWith(repository)) && !requestPath.includes("..");
@@ -42,7 +71,12 @@ export function registerModelProxy(app: Express) {
     }
     res.setHeader("cache-control", "public, max-age=31536000, immutable");
     res.setHeader("access-control-allow-origin", "*");
-    res.sendFile(path.join(TRANSFORMERS_DIST, asset));
+    const transformersDist = getTransformersDist();
+    if (!transformersDist) {
+      res.status(501).json({ error: "ORT assets not available in this environment" });
+      return;
+    }
+    res.sendFile(path.join(transformersDist, asset));
   });
 
   app.get("/api/ocr/*", (req, res) => {
@@ -53,7 +87,12 @@ export function registerModelProxy(app: Express) {
     }
     res.setHeader("cache-control", "public, max-age=31536000, immutable");
     res.setHeader("access-control-allow-origin", "*");
-    res.sendFile(path.join(OCR_ASSET_ROOT, asset));
+    const ocrRoot = getOcrAssetRoot();
+    if (!ocrRoot) {
+      res.status(501).json({ error: "OCR assets not available in this environment" });
+      return;
+    }
+    res.sendFile(path.join(ocrRoot, asset));
   });
 
   app.get("/api/model/*", async (req, res) => {
