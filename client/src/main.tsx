@@ -6,7 +6,12 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import { startLogin } from "./const";
+import { installOnnxRuntimeDiagnosticFilter } from "./lib/onnxDiagnostics";
 import "./index.css";
+
+// Must run before a user starts inference. It only removes ONNX Runtime's
+// non-fatal node-placement warning; genuine errors still reach the collector.
+installOnnxRuntimeDiagnosticFilter();
 
 const queryClient = new QueryClient();
 

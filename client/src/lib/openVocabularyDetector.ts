@@ -5,6 +5,7 @@ env.allowLocalModels = false;
 env.allowRemoteModels = true;
 env.useBrowserCache = true;
 env.remoteHost = "/api/model/";
+env.backends.onnx.logLevel = "error";
 
 const MODEL_ID = "onnx-community/grounding-dino-tiny-ONNX";
 // YOLOS handles people and vehicles in the primary pass. This detailed pass

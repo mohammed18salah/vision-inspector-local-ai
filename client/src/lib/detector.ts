@@ -9,8 +9,8 @@ env.allowLocalModels = false;
 env.allowRemoteModels = true;
 env.useBrowserCache = true;
 env.remoteHost = "/api/model/";
+env.backends.onnx.logLevel = "error";
 if (env.backends.onnx.wasm) {
-  env.backends.onnx.logLevel = "error";
   env.backends.onnx.wasm.numThreads = 1;
   // Keep ONNX Runtime on the same origin as the application. This prevents
   // inference from failing when a public CDN is blocked or unreachable.
