@@ -1,138 +1,153 @@
-# Vision Inspector Local AI · منظومة الرؤية الحاسوبية والإنقاذ الذكي
+# Vision Inspector Local AI
 
-> **تم التطوير بواسطة:** **Mohammed Salahuldeen Dev** ([@mohammed18salah](https://github.com/mohammed18salah))  
-> **الإصدار:** `v1.3.0` | **الخصوصية:** معالجة محلية 100% (On-Device AI) بدون خوادم خارجية | **الترخيص:** MIT
+> **Developed by:** **Mohammed Salahuldeen Dev** ([@mohammed18salah](https://github.com/mohammed18salah))  
+> **Version:** `v1.3.0` | **Privacy:** 100% On-Device AI Processing (Zero Cloud Data Transmission) | **License:** MIT
 
-[![Vercel Deployment](https://img.shields.io/badge/Deployment-Vercel-success?style=flat-square&logo=vercel)](https://vision-inspector-local-ai.vercel.app/)
-[![Windows Desktop](https://img.shields.io/badge/Windows-Desktop%20App-0078D4?style=flat-square&logo=windows)](https://github.com/mohammed18salah/vision-inspector-local-ai/releases)
-[![WebGPU & WASM](https://img.shields.io/badge/Inference-WebGPU%20%2F%20WASM-blue?style=flat-square)](https://huggingface.co/docs/transformers.js)
-[![OCR Tesseract](https://img.shields.io/badge/OCR-Arabic%20%26%20English-green?style=flat-square)](https://github.com/naptha/tesseract.js)
+**Vision Inspector Local AI** is an Arabic-first, right-to-left visual-analysis and disaster rescue workspace for the web and Windows. It supports image object detection, humanitarian disaster search & rescue scanning, OCR, interactive bounding boxes, structured JSON/CSV export, and local video object tracking while leaving the original video audio available to the user.
 
----
-
-## 🌟 نظرة عامة (Overview)
-
-**Vision Inspector Local AI** هي منظومة متقدمة للرؤية الحاسوبية والإنقاذ في حالات الطوارئ والكوارث، تعمل بالكامل محلياً على جهاز المستخدم (Web & Windows Desktop). تم تطويرها لتوفير كشف فوري ودقيق للأشخاص، المركبات، الأجسام، الأفراد المحتجزين تحت الأنقاض، واستخراج النصوص باللغتين العربية والإنجليزية، وتتبع الفيديو مع الحفاظ على الصوت الأصلي، مع ضمان الخصوصية التامة حيث لا تغادر أي صورة أو فيديو حاسوبك.
+> The application is designed around local processing. Uploaded images, video frames, OCR results, detection boxes, tracking data, and exports stay on the device. The web version connects directly to model repositories via local browser cache (`CacheStorage` / `IndexedDB`) using WebGPU or WASM. The Windows version accesses files through a native selection dialog and downloads public model artifacts only when they are missing from the local cache.
 
 ---
 
-## 🚨 وضع الإنقاذ والبحث في الكوارث (Disaster Search & Rescue Mode)
+## Screenshots
 
-يتميز الإصدار الحديث بدعم متقدم لفرق الاستجابة السريعة، الدفاع المدني، والباحثين في مجالات الطوارئ:
-- **كشف الأشخاص تحت الأنقاض:** فحص متقدم لكشف الضحايا أو الأطراف البشرية الجزئية الظاهرة بين الركام والحطام.
-- **مسح متعدد المقاييس (Multi-Scale Tiling Pass):** تقطيع الصورة وفحص التفاصيل الدقيقة للأجسام البعيدة والصغيرة.
-- **استدلال محلي في الميدان:** يعمل دون الحاجة إلى أي اتصال بالإنترنت في المناطق المنكوبة بعد التنزيل الأولي للنموذج.
+| Windows Classic Dark — initial state | Windows local-history sharing |
+| --- | --- |
+| ![Electron capture of the current Classic Dark initial state with no file selected and no claimed detections.](docs/screenshots/windows-desktop-classic-home.png) | ![Electron capture of the local history panel with CSV and PDF sharing controls.](docs/screenshots/windows-desktop-history-export.png) |
 
 ---
 
-## ⚡ الميزات والقدرات الرئيسية (Key Features)
+## Capabilities
 
-| الميزة / Capability | التفاصيل والتقنيات المستخدمة |
+| Capability | Implementation |
 | :--- | :--- |
-| **كشف الكائنات الفوري** | نموذج `Xenova/yolos-tiny` عبر Transformers.js v3 و ONNX Runtime Web بتسريع عتادي WebGPU أو WASM. |
-| **كشف المرشحين والمفردات المفتوحة** | استدلال بصري صفري `onnx-community/grounding-dino-tiny-ONNX` لكشف الأفراد في الركام والمباني. |
-| **استخراج النصوص (OCR)** | محرك Tesseract.js يدعم اللغة العربية والإنجليزية مع إحداثيات الكلمات ومستوى الثقة. |
-| **تتبع الفيديو الحي** | تتبع مستقر للكائنات المتحركة عبر الإطارات (Stable Track IDs) مع الحفاظ على الصوت الأصلي. |
-| **لوحة تحكم وتكبير تفاعلية** | تكبير (Zoom)، تحريك (Pan)، والتركيز الفوري على الصندوق المحدد مع استعراض الأبعاد. |
-| **تصدير التقارير** | تصدير فوري لنتائج التحليل والإحداثيات بصيغ `JSON` و `CSV`. |
-| **مقياس الأداء المحلي** | أداة قياس مقارنة مباشرة لسرعة WebGPU مقابل CPU/WASM على عتاد الجهاز. |
-| **تطبيق Windows مخصص** | نسخة مكتبية مبنية بـ Electron مع بروتوكول محلي آمن وإدارة سجلات التاريخ المحلي. |
+| **Image object detection** | `Xenova/yolos-tiny` through `@huggingface/transformers` v3, utilizing WebGPU when available and WASM fallback. |
+| **Disaster Search & Rescue** | Dedicated mode with `onnx-community/grounding-dino-tiny-ONNX` zero-shot detection for finding trapped persons under rubble, partially buried human bodies/limbs in debris, and emergency equipment. |
+| **Small and distant objects** | A local multi-scale detail pass reviews overlapping image tiles when the overview finds few objects or when Rescue Mode is active. |
+| **Open-vocabulary candidates** | Local Grounding DINO pass for people, buildings, vehicles, and specific target queries. Low-confidence results are explicitly marked as **tentative** or **rescue candidates**. |
+| **Arabic & English OCR** | Arabic and English OCR with bundled Tesseract.js worker/core and `eng`/`ara` language data, including confidence and word coordinates. |
+| **Interactive image inspection** | Accurate `object-fit: contain` box layout, smooth pan/zoom, focusable detections, and real image-region thumbnails. |
+| **Structured export** | JSON and CSV downloads, including bounding boxes, OCR text, model source, and `candidateLabel`/`tentative`/`rescue` fields. |
+| **Real-time video tracking** | Local periodic frame analysis, IoU plus center-proximity track matching, stable track IDs, and a canvas overlay above a native video player that preserves audio playback. |
+| **Windows desktop application** | Electron desktop workspace with native file/save dialogs, local `vision-media://` file session protocol, device diagnostics, bundled ONNX Runtime/OCR assets, and WebGPU-to-WASM fallback. |
+| **Local performance benchmark** | Optional, on-demand benchmark with separate model warm-up and three inference passes. Reports median execution time for WASM/CPU vs WebGPU hardware acceleration. |
+| **Local history & audit log** | Persisted analysis and export summaries with local review, individual deletion, and clear-all control. Visible summaries can be exported as BOM-encoded CSV or self-contained landscape A4 PDF. |
 
 ---
 
-## 🏗️ البنية الهندسية (Architecture)
+## Quick start
+
+### Prerequisites
+
+- **Node.js** 20 or 22+.
+- **pnpm** 9 or 10.
+- A modern Chromium-based browser (Chrome, Edge) is recommended for hardware-accelerated **WebGPU** inference.
+
+---
+
+### Run the web application locally
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start development server
+pnpm dev
+```
+
+Open `http://localhost:5173`. Select **تحليل صورة والأنقاض** for image/disaster inspection or **تحليل فيديو** for real-time video tracking.
+
+---
+
+### Run the Windows desktop app from source
+
+| Requirement | Notes |
+| :--- | :--- |
+| **Operating system** | Windows 10/11 x64 is the primary target. The UI can also be developed on any Electron-supported OS. |
+| **Runtime** | Node.js 22 and pnpm 10. |
+| **GPU Acceleration** | Optional. The app uses WebGPU when available and automatically falls back to local WASM/CPU. |
+| **Storage** | Free space is needed for the initial vision-model cache. ONNX Runtime and Tesseract OCR resources are bundled. |
+
+```bash
+pnpm install
+pnpm desktop:dev
+```
+
+To build a standalone production Windows installer (.exe):
+
+```bash
+pnpm desktop:pack:win
+```
+
+The installer executable will be written to `release/`.
+
+---
+
+### Validation commands
+
+```bash
+pnpm test          # Run Vitest test suites (all 14 test files)
+pnpm check         # TypeScript typecheck
+pnpm build         # Build production web bundle (dist/public)
+pnpm desktop:check # Typecheck desktop codebase
+pnpm desktop:build # Build desktop renderer and main bundles
+```
+
+---
+
+### Deploy to Vercel
+
+This repository includes `vercel.json` configured for instant deployment:
+
+| Vercel setting | Required value |
+| :--- | :--- |
+| **Framework Preset** | `Vite` |
+| **Install Command** | `pnpm install --frozen-lockfile` |
+| **Build Command** | `pnpm build` |
+| **Output Directory** | `dist/public` |
+
+Static assets (`/assets/*`, `/ocr-assets/*`, `*.wasm`, `*.onnx`) are served with explicit HTTP `Cache-Control` headers for maximum client-side performance.
+
+---
+
+## Architecture
 
 ```text
 Vision Inspector Local AI
 ├── Web Client (Vite + React + TailwindCSS)
-│   ├── Hugging Face Transformers.js v3 (Local WebGPU / WASM execution)
-│   │   ├── Primary: YOLOS Tiny
-│   │   └── Zero-Shot / Disaster: Grounding DINO Tiny
-│   ├── Tesseract.js (Arabic & English OCR)
-│   └── Audio & Canvas Video Frame Tracker
+│   ├── Hugging Face Transformers.js v3 (WebGPU / WASM execution)
+│   │   ├── Primary Detector: Xenova/yolos-tiny
+│   │   └── Zero-Shot & Rescue Detector: onnx-community/grounding-dino-tiny-ONNX
+│   ├── Tesseract.js (Arabic & English OCR with IndexedDB model persistence)
+│   ├── Multi-Scale Detail & Tile Scanner (Canvas recycle pool)
+│   └── Video Audio-Preserving Frame Tracker
 │
 ├── Desktop App (Electron Windows x64)
-│   ├── Native IPC Bridge & Local File Protocols
-│   ├── Offline Cache Management (ONNX + Weights)
+│   ├── Native IPC Bridge & Local File Protocols (vision-media://)
+│   ├── Offline Model Cache (ONNX + Tensor Weights)
 │   └── Local History & PDF/CSV Export Engine
 │
-└── Developer: Mohammed Salahuldeen Dev
+└── Developed by: Mohammed Salahuldeen Dev
 ```
 
 ---
 
-## 🚀 التشغيل والتثبيت السريع (Quick Start)
+## Privacy Manifesto
 
-### المتطلبات الأساسية
-- **Node.js**: الإصدار 20 أو 22+.
-- **pnpm**: الإصدار 9 أو 10.
-- متصفح يدعم **WebGPU** (مثل Google Chrome أو Microsoft Edge) للاستفادة من أقصى سرعة على كرت الشاشة.
-
-### 1. تشغيل نسخة الويب محلياً
-```bash
-# تثبيت الاعتماديات
-pnpm install
-
-# تشغيل خادم التطوير
-pnpm dev
-```
-افتح الرابط في المتصفح `http://localhost:5173`.
-
-### 2. تشغيل تطبيق Windows Desktop من المصدر
-```bash
-pnpm desktop:dev
-```
-
-### 3. بناء حزمة التثبيت لنظام Windows (.exe)
-```bash
-pnpm desktop:pack:win
-```
-سيتم إنشاء ملف التثبيت المكتبي في مجلد `release/`.
+- **Zero Cloud Leakage:** No image, video frame, detection box, or OCR text is ever transmitted to remote servers.
+- **Local Persistence:** Vision models and OCR dictionaries are cached locally within the client browser (`IndexedDB` / `CacheStorage`) for complete offline availability.
+- **Humanitarian Purpose:** Designed for emergency responders, civil defense teams, and computer vision researchers.
 
 ---
 
-## 🧪 الفحص والاختبار (Validation & Testing)
+## Author & Developer
 
-```bash
-# تشغيل اختبارات الوحدة الشاملة
-pnpm test
-
-# فحص أنواع TypeScript
-pnpm check
-
-# بناء حزمة الإنتاج للويب
-pnpm build
-```
-
----
-
-## 🌐 النشر على Vercel (Vercel Deployment)
-
-المشروع مهيأ بالكامل للنشر على منصة Vercel عبر ملف `vercel.json`:
-- **Framework Preset:** `Vite`
-- **Build Command:** `pnpm build`
-- **Output Directory:** `dist/public`
-
-تأكد من عدم تعديل مسار الإخراج إلى `dist` حتى لا يتجاوز الخادم الثابت.
-
----
-
-## 🔒 بيان الخصوصية والأمان (Privacy Manifesto)
-
-- **صفر نقل بيانات:** لا يتم إرسال أي صورة، مقطع فيديو، أو نص مستخرج إلى أي خادم خارجي على الإطلاق.
-- **تخزين محلي آمن:** تُخزن أوزان النماذج داخل ذاكرة المتصفح (`IndexedDB / CacheStorage`) لتعمل بدون إنترنت مستقبلاً.
-- **إسناد وتطوير:** تم بناء وتطوير هذا النظام لخدمة الإنسانية والبحث العلمي في الرؤية الحاسوبية بواسطة **Mohammed Salahuldeen Dev**.
-
----
-
-## 👨‍💻 المطور (Developer)
-
-- **الاسم:** **Mohammed Salahuldeen Dev**
+- **Name:** **Mohammed Salahuldeen Dev**
 - **GitHub:** [@mohammed18salah](https://github.com/mohammed18salah)
-- **المستودع:** [vision-inspector-local-ai](https://github.com/mohammed18salah/vision-inspector-local-ai)
+- **Repository:** [mohammed18salah/vision-inspector-local-ai](https://github.com/mohammed18salah/vision-inspector-local-ai)
 
 ---
 
-## 📜 الترخيص (License)
+## License
 
-هذا المشروع مرخص بموجب رخصة [MIT](LICENSE).
+This project is licensed under the [MIT License](LICENSE).

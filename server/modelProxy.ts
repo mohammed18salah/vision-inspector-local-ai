@@ -35,7 +35,7 @@ function getOcrAssetRoot(): string | null {
   if (_ocrAssetRoot !== null) return _ocrAssetRoot;
   try {
     // import.meta.dirname may be unavailable in some serverless runtimes
-    const dirname: string | undefined = (import.meta as Record<string, unknown>).dirname as string | undefined;
+    const dirname: string | undefined = (import.meta as unknown as Record<string, unknown>).dirname as string | undefined;
     if (!dirname) return null;
     _ocrAssetRoot = existsSync(path.join(dirname, "ocr-assets"))
       ? path.join(dirname, "ocr-assets")
