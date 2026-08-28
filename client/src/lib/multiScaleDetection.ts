@@ -1,5 +1,5 @@
 import { RawImage, type ProgressCallback } from "@huggingface/transformers";
-import { detectObjects, type LocalDetection } from "./detector";
+import { detectObjects, yieldToMainThread, type LocalDetection } from "./detector";
 import { boxIou, mergeDetections as mergeSharedDetections } from "@shared/vision-core";
 
 export type DetailTile = { x: number; y: number; width: number; height: number };
@@ -38,7 +38,6 @@ function cropImage(image: HTMLImageElement, tile: DetailTile) {
   if (!context) throw new Error("تعذر تجهيز جزء الصورة للتحليل الدقيق.");
   context.drawImage(image, tile.x, tile.y, tile.width, tile.height, 0, 0, tile.width, tile.height);
   const rawImage = RawImage.fromCanvas(canvas);
-  // Return the canvas to the pool immediately after pixel data is extracted.
   releaseCanvas(canvas);
   return rawImage;
 }
@@ -63,7 +62,7 @@ export async function detectImageWithDetailPass(
   const baseThreshold = options.threshold ?? (options.rescueMode ? 0.12 : 0.18);
   const overview = await detectObjects(image, { threshold: baseThreshold, onProgress: options.onProgress });
   
-  // In rescue mode, always perform detail tile scanning to find occluded people / limbs
+  // In rescue mode, scan tiles if image is large enough; otherwise skip to preserve speed
   const shouldSkipTiles = !options.rescueMode && (overview.length >= DETAIL_TRIGGER_RESULT_COUNT || image.naturalWidth < 600 || image.naturalHeight < 600);
   if (shouldSkipTiles) {
     return mergeDetections(overview);
@@ -73,9 +72,10 @@ export async function detectImageWithDetailPass(
   const detailed: LocalDetection[] = [];
   try {
     for (let index = 0; index < tiles.length; index += 1) {
+      await yieldToMainThread(10); // Yield to keep UI responsive
       const tile = tiles[index]!;
       const tileImage = cropImage(image, tile);
-      const tileDetections = await detectObjects(tileImage, { threshold: options.rescueMode ? 0.11 : 0.16 });
+      const tileDetections = await detectObjects(tileImage, { threshold: options.rescueMode ? 0.12 : 0.16 });
       detailed.push(...tileDetections.map((detection) => projectTileDetection(detection, tile, image.naturalWidth, image.naturalHeight)));
       options.onDetailProgress?.(index + 1, tiles.length);
     }

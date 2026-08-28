@@ -1,11 +1,10 @@
 /*
- * Vision Inspector Local AI — Modernized Visual Analysis & Disaster Rescue System
- * Developed by: Mohammed Salahuldeen Dev
- * Privacy-First Local AI Workspace: 100% on-device inference using WebGPU/WASM.
+ * Vision Inspector Local AI — Clean Apple-Style Visual Workspace
+ * Privacy-First Local AI: 100% on-device WebGPU/WASM inference with zero data leakage.
  */
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
 import { RawImage } from "@huggingface/transformers";
-import { detectObjects, getDetectorErrorMessage, getInferenceDevice, type LocalDetection } from "@/lib/detector";
+import { detectObjects, getDetectorErrorMessage, getInferenceDevice, yieldToMainThread, type LocalDetection } from "@/lib/detector";
 import { recognizeText, type LocalOcrResult } from "@/lib/ocr";
 import { buildDetectionCsvRows, toCsv, toExportDetection } from "@/lib/export";
 import { getBoxInImageSpace, getContainedImageLayout, type ImageLayout } from "@/lib/imageLayout";
@@ -15,7 +14,6 @@ import { playScanSound, setScanSoundEnabled } from "@/lib/scanSound";
 import { matchVideoTracks, type TrackedDetection } from "@/lib/videoTracking";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { AboutModal } from "@/components/AboutModal";
 import { cn } from "@/lib/utils";
 import {
@@ -46,15 +44,10 @@ import {
   VolumeX,
   X,
   Zap,
-  HeartHandshake,
-  AlertTriangle,
   Flame,
-  LifeBuoy,
-  Layers,
-  HelpCircle,
 } from "lucide-react";
 
-const MODEL_NAME = "YOLOS Tiny + Grounding DINO · Local";
+const MODEL_NAME = "YOLOS Tiny · local";
 const SMOKE_IMAGE = "/manus-storage/vision-inspector-reference_db9c3cb7.jpg";
 const MOUNTAIN_SMOKE_IMAGE = "/manus-storage/vision-inspector-mountain-multisubject-test_909f48e7.jpg";
 const SMOKE_VIDEO = "/manus-storage/vision-inspector-video-smoke_1b5f1d55.webm";
@@ -62,11 +55,10 @@ const WINDOWS_DOWNLOAD_URL = "https://github.com/mohammed18salah/vision-inspecto
 const REPOSITORY_URL = "https://github.com/mohammed18salah/vision-inspector-local-ai";
 
 const SAMPLE_IMAGES = [
-  { label: "كوارث وركام / إنقاذ", url: "https://images.unsplash.com/photo-1541888946425-d0fbb18015f6?auto=format&fit=crop&w=1600&q=85" },
   { label: "شارع وسيارات", url: "https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&w=1600&q=85" },
   { label: "شخص وحيوان", url: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1600&q=85" },
-  { label: "كلب وأشجار", url: "https://images.unsplash.com/photo-1558788353-f76d92427f16?auto=format&fit=crop&w=1600&q=85" },
-  { label: "مباني وأشياء متعددة", url: "https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&w=1600&q=85" },
+  { label: "كوارث وركام", url: "https://images.unsplash.com/photo-1541888946425-d0fbb18015f6?auto=format&fit=crop&w=1600&q=85" },
+  { label: "أشياء متعددة", url: "https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&w=1600&q=85" },
 ];
 
 type AnalysisStatus = "idle" | "loading" | "scanning" | "complete" | "error";
@@ -77,16 +69,16 @@ type AnalysisMode = "image" | "video" | null;
 
 type ColorSet = { accent: string; background: string; label: string };
 const COLORS: ColorSet[] = [
-  { accent: "#2563eb", background: "rgba(37,99,235,.14)", label: "blue" },
-  { accent: "#059669", background: "rgba(5,150,105,.14)", label: "emerald" },
-  { accent: "#d97706", background: "rgba(217,119,6,.16)", label: "amber" },
-  { accent: "#7c3aed", background: "rgba(124,58,237,.15)", label: "purple" },
-  { accent: "#dc2626", background: "rgba(220,38,38,.16)", label: "red" },
+  { accent: "#1677ff", background: "rgba(22,119,255,.12)", label: "blue" },
+  { accent: "#16a085", background: "rgba(22,160,133,.12)", label: "teal" },
+  { accent: "#e78a2f", background: "rgba(231,138,47,.14)", label: "orange" },
+  { accent: "#9b6cff", background: "rgba(155,108,255,.14)", label: "purple" },
+  { accent: "#dc2626", background: "rgba(220,38,38,.14)", label: "red" },
 ];
 
 function readableLabel(label: string) {
   const translations: Record<string, string> = {
-    person: "شخص / فرد",
+    person: "شخص",
     car: "سيارة",
     truck: "شاحنة",
     bus: "حافلة",
@@ -109,7 +101,7 @@ function readableLabel(label: string) {
     book: "كتاب",
     clock: "ساعة",
     umbrella: "مظلة",
-    building: "مبنى / منشأة",
+    building: "مبنى",
     tree: "شجرة",
     vehicle: "مركبة",
     unknown: "غير معروف",
@@ -118,7 +110,7 @@ function readableLabel(label: string) {
     "human limb": "طرف بشري",
     rubble: "ركام / أنقاض",
     debris: "حطام",
-    helmet: "خوذة أمان",
+    helmet: "خوذة",
   };
   return translations[label.toLowerCase()] ?? label;
 }
@@ -147,14 +139,10 @@ function saveFile(contents: string, filename: string, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
-function VisionLogo() {
+function VisionMark() {
   return (
-    <div className="vision-custom-logo" aria-hidden="true">
-      <div className="logo-inner">
-        <span className="logo-scan-line" />
-        <div className="logo-crosshair" />
-        <span className="logo-core" />
-      </div>
+    <div className="apple-mark" aria-hidden="true">
+      <span /><span /><span />
     </div>
   );
 }
@@ -164,7 +152,7 @@ export default function Home() {
   const mountainSmokeMode = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mountainSmoke") === "1";
   const smokeVideoMode = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("videoSmoke") === "1";
   const videoProbeMode = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("videoProbe") === "1";
-  
+
   const fileRef = useRef<HTMLInputElement>(null);
   const videoFileRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -180,10 +168,8 @@ export default function Home() {
   const videoRateRef = useRef(1);
   const panRef = useRef<{ pointerX: number; pointerY: number; startX: number; startY: number } | null>(null);
   const lastPulseRef = useRef(0);
-  
-  // Reusable canvas for video frame extraction — avoids per-frame allocation.
+
   const videoFrameCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  // Cache analysis results keyed by imageSrc + mode
   const analysisCacheRef = useRef<Map<string, { detections: LocalDetection[]; duration: number }>>(new Map());
 
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -228,10 +214,7 @@ export default function Home() {
   }, [detections, filter]);
 
   const rescueCandidateCount = detections.filter((item) => item.sourceModel?.includes("Rescue") || item.label.includes("person") || item.label.includes("human")).length;
-
-  const averageConfidence = detections.length
-    ? Math.round(detections.reduce((sum, item) => sum + item.confidence, 0) / detections.length)
-    : 0;
+  const averageConfidence = detections.length ? Math.round(detections.reduce((sum, item) => sum + item.confidence, 0) / detections.length) : 0;
   const device = getInferenceDevice();
   const hasExportableResults = status === "complete" || Boolean(ocrResult);
   const videoProgress = videoDuration > 0 ? Math.min(100, Math.max(0, (videoTime / videoDuration) * 100)) : 0;
@@ -240,9 +223,7 @@ export default function Home() {
     const canvas = canvasRef.current;
     const image = imageRef.current;
     if (!canvas || !image?.naturalWidth || !image.naturalHeight) return;
-    const canvasWidth = canvas.clientWidth;
-    const canvasHeight = canvas.clientHeight;
-    setImageLayout(getContainedImageLayout(canvasWidth, canvasHeight, image.naturalWidth, image.naturalHeight));
+    setImageLayout(getContainedImageLayout(canvas.clientWidth, canvas.clientHeight, image.naturalWidth, image.naturalHeight));
   };
 
   useEffect(() => {
@@ -264,7 +245,6 @@ export default function Home() {
     if (videoSrc.startsWith("blob:")) URL.revokeObjectURL(videoSrc);
   }, [videoSrc]);
 
-  // Revoke blob URL when imageSrc changes or component unmounts to prevent memory leaks.
   useEffect(() => () => {
     if (imageSrc.startsWith("blob:")) URL.revokeObjectURL(imageSrc);
   }, [imageSrc]);
@@ -360,10 +340,7 @@ export default function Home() {
   const processVideoFrame = async (allowPaused = false) => {
     const video = videoRef.current;
     if (!video || videoProcessingRef.current || (!allowPaused && video.paused) || video.ended || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
-    if (video.videoWidth < 16 || video.videoHeight < 16) {
-      if (videoProbeMode) console.warn("[Vision Inspector] video probe waiting for decoded frame", { width: video.videoWidth, height: video.videoHeight });
-      return;
-    }
+    if (video.videoWidth < 16 || video.videoHeight < 16) return;
     videoProcessingRef.current = true;
     setVideoStatus("tracking");
     setVideoError("");
@@ -381,12 +358,7 @@ export default function Home() {
       const frameContext = frameCanvas.getContext("2d");
       if (!frameContext) throw new Error("تعذر تجهيز إطار الفيديو للتحليل.");
       frameContext.drawImage(video, 0, 0, frameCanvas.width, frameCanvas.height);
-      if (videoProbeMode) {
-        const sample = frameContext.getImageData(Math.floor(frameCanvas.width / 2), Math.floor(frameCanvas.height / 2), 1, 1).data;
-        console.info("[Vision Inspector] video probe canvas ready", JSON.stringify({ width: frameCanvas.width, height: frameCanvas.height, centerPixel: [sample[0], sample[1], sample[2], sample[3]] }));
-      }
       const frameImage = RawImage.fromCanvas(frameCanvas);
-      if (videoProbeMode) console.info("[Vision Inspector] video probe image decoded", JSON.stringify({ width: frameImage.width, height: frameImage.height }));
       const detectionsForFrame = await detectObjects(frameImage, { threshold: 0.28 });
       const result = matchVideoTracks(videoTracksRef.current, detectionsForFrame, nextTrackIdRef.current, video.currentTime);
       nextTrackIdRef.current = result.nextTrackId;
@@ -394,7 +366,6 @@ export default function Home() {
       setVideoTracks(result.tracked);
       setVideoTime(video.currentTime);
       drawVideoOverlay(result.tracked);
-      if (videoProbeMode) console.info("[Vision Inspector] video probe complete", JSON.stringify({ tracks: result.tracked.map((track) => ({ id: track.trackId, label: track.label, confidence: track.confidence })), time: video.currentTime, frame: { width: video.videoWidth, height: video.videoHeight } }));
       if (result.tracked.length) playScanSound("detected");
     } catch (caught) {
       console.error("[Vision Inspector] video tracking failed", caught);
@@ -476,7 +447,6 @@ export default function Home() {
       setError("يرجى اختيار ملف صورة صالح بصيغة JPG أو PNG أو WebP.");
       return;
     }
-    // Revoke the previous blob URL immediately to free memory.
     setImageSrc((prev) => {
       if (prev.startsWith("blob:")) URL.revokeObjectURL(prev);
       return URL.createObjectURL(file);
@@ -515,9 +485,9 @@ export default function Home() {
     if (!imageRef.current || !imageSrc) return;
     setStatus("loading");
     setError("");
-    setModelProgress(4);
+    setModelProgress(6);
     setOcrStatus("loading");
-    setOcrProgress(2);
+    setOcrProgress(5);
     setOcrError("");
     lastPulseRef.current = 0;
     playScanSound("start");
@@ -525,6 +495,7 @@ export default function Home() {
     const sourceImage = imageRef.current;
     const cacheKey = `${imageSrc}_${rescueMode ? "rescue" : "normal"}`;
 
+    // Run OCR asynchronously in background so detection starts immediately
     const ocrPromise = recognizeText(sourceImage, { width: sourceImage.naturalWidth, height: sourceImage.naturalHeight }, (progress) => {
       setOcrProgress(Math.max(2, Math.min(100, Math.round(progress * 100))));
     })
@@ -535,12 +506,11 @@ export default function Home() {
       })
       .catch((ocrFailure) => {
         console.error("[Vision Inspector] OCR failed", ocrFailure);
-        setOcrError("تعذر استخراج النص من هذه الصورة، بينما بقي كشف العناصر متاحًا.");
+        setOcrError("تعذر استخراج النص من هذه الصورة.");
         setOcrStatus("error");
       });
 
     try {
-      // Check in-memory analysis cache
       const cached = analysisCacheRef.current.get(cacheKey);
       let result: LocalDetection[];
       let elapsedSeconds: number;
@@ -551,6 +521,7 @@ export default function Home() {
         setModelProgress(100);
         setStatus("scanning");
       } else {
+        await yieldToMainThread(10);
         let rawResult = await detectImageWithDetailPass(sourceImage, {
           rescueMode,
           threshold: rescueMode ? 0.12 : 0.18,
@@ -558,9 +529,9 @@ export default function Home() {
             if (event && typeof event === "object" && "progress" in event) {
               const value = Number((event as { progress?: number }).progress);
               if (Number.isFinite(value)) {
-                const progress = Math.max(4, Math.min(92, Math.round(value)));
+                const progress = Math.max(6, Math.min(90, Math.round(value)));
                 setModelProgress(progress);
-                if (progress >= lastPulseRef.current + 24) {
+                if (progress >= lastPulseRef.current + 25) {
                   lastPulseRef.current = progress;
                   playScanSound("pulse");
                 }
@@ -570,22 +541,17 @@ export default function Home() {
           },
           onDetailProgress: (completedTiles, totalTiles) => {
             setStatus("scanning");
-            setModelProgress(Math.max(74, Math.min(96, 74 + Math.round((completedTiles / totalTiles) * 22))));
-            if (completedTiles === 1) playScanSound("pulse");
+            setModelProgress(Math.max(70, Math.min(94, 70 + Math.round((completedTiles / totalTiles) * 24))));
           },
         });
 
+        // Run zero-shot detector only when necessary or in rescue mode
         if (rawResult.length < 5 || rescueMode) {
+          await yieldToMainThread(10);
           setStatus("scanning");
-          setModelProgress(82);
+          setModelProgress(84);
           const openVocabularyDetections = await detectOpenVocabularyObjects(sourceImage, {
             rescueMode,
-            onProgress: (event) => {
-              if (event && typeof event === "object" && "progress" in event) {
-                const value = Number((event as { progress?: number }).progress);
-                if (Number.isFinite(value)) setModelProgress(Math.max(82, Math.min(97, 82 + Math.round(value * 15))));
-              }
-            },
             onCategoryProgress: (completed, total) => {
               setModelProgress(Math.max(84, Math.min(98, 84 + Math.round((completed / total) * 14))));
             },
@@ -596,7 +562,6 @@ export default function Home() {
         result = rawResult;
         elapsedSeconds = Math.max(0.01, (performance.now() - started) / 1000);
 
-        // Cache result (up to 10 entries)
         if (analysisCacheRef.current.size >= 10) {
           const oldestKey = analysisCacheRef.current.keys().next().value;
           if (oldestKey !== undefined) analysisCacheRef.current.delete(oldestKey);
@@ -662,29 +627,24 @@ export default function Home() {
 
   return (
     <div className="vision-app" dir="rtl">
-      {/* Header */}
+      {/* Header — Clean & Apple-like with About Button */}
       <header className="apple-header">
         <div className="header-brand">
-          <VisionLogo />
+          <VisionMark />
           <div>
             <strong>Vision Inspector</strong>
-            <span>الرؤية الآلية والإنقاذ الذكي</span>
+            <span>تحليل بصري محلي · ويب وWindows</span>
           </div>
         </div>
 
         <div className="header-center">
           <span className="privacy-pill">
-            <ShieldCheck size={14} className="text-emerald-500" />
+            <ShieldCheck size={14} />
             <span>معالجة محلية 100% · لا تغادر جهازك</span>
           </span>
         </div>
 
         <div className="header-actions">
-          <span className="dev-pill" title="مطور المشروع">
-            <span>بواسطة:</span>
-            <strong>Mohammed Salahuldeen Dev</strong>
-          </span>
-
           <span className="runtime-pill">
             <span className="runtime-dot" />
             {device === "webgpu" ? "WebGPU تسريع عتادي" : "WASM / CPU"}
@@ -704,11 +664,10 @@ export default function Home() {
           <Button
             variant="ghost"
             size="sm"
-            className="about-btn"
-            aria-label="حول المنصة والمشروع"
+            className="about-header-btn"
             onClick={() => setAboutOpen(true)}
           >
-            <Sparkles size={15} />
+            <Sparkles size={14} />
             <span>حول المنصة</span>
           </Button>
         </div>
@@ -719,28 +678,21 @@ export default function Home() {
         {/* Hero Section */}
         <section className="page-intro">
           <div>
-            <div className="flex items-center gap-2 flex-wrap mb-2">
-              <p className="section-eyebrow">
-                <span className="eyebrow-dot" /> مساحة الرؤية والإنقاذ الذكي
-              </p>
-              {rescueMode && (
-                <Badge className="bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30 text-[10px] px-2 py-0.5">
-                  <Flame size={12} className="ml-1 inline" /> وضع الكوارث نشط
-                </Badge>
-              )}
-            </div>
+            <p className="section-eyebrow">
+              <span className="eyebrow-dot" /> مساحة الرؤية والإنقاذ الذكي
+            </p>
 
             <h1>
-              منظومة الرؤية الحاسوبية <span>والإنقاذ في الكوارث.</span>
+              فحص ذكي للصور <span>ومقاطع الفيديو.</span>
             </h1>
 
             <p className="lede">
-              تحليل بصري متقدم وكشف فوري للكائنات والأفراد تحت الأنقاض والركام واستخراج النصوص محلياً داخل جهازك بأعلى سرعة وخصوصية مطلقة بدون خوادم خارجية.
+              كشف الكائنات، تتبع الحركة بين الإطارات، واستخراج النصوص، مع دعم وضع البحث في الكوارث والأنقاض — كل ذلك يتم محلياً بالكامل على معالج وكرت جهازك.
             </p>
 
             <div className="project-links" aria-label="روابط المشروع">
               <a className="project-link project-link-primary" href={WINDOWS_DOWNLOAD_URL} target="_blank" rel="noreferrer">
-                <Download size={15} /> تنزيل تطبيق Windows Desktop
+                <Download size={15} /> تنزيل تطبيق Windows
               </a>
               <a className="project-link" href={REPOSITORY_URL} target="_blank" rel="noreferrer">
                 <Github size={15} /> المستودع المفتوح على GitHub
@@ -754,40 +706,9 @@ export default function Home() {
           <div className="intro-model">
             <Cpu size={17} />
             <div>
-              <span>النماذج المفعلة</span>
+              <span>النموذج المحلي</span>
               <strong>{MODEL_NAME}</strong>
-              <small className="text-[10px] text-muted-foreground">WebGPU + ONNX Runtime</small>
             </div>
-          </div>
-        </section>
-
-        {/* Disaster Mission Alert Banner */}
-        <section className="disaster-hero-card">
-          <div className="disaster-hero-icon">
-            <LifeBuoy size={24} />
-          </div>
-          <div className="disaster-hero-text">
-            <h3>تطبيق متخصص لحالات الطوارئ والإنقاذ (Search & Rescue)</h3>
-            <p>
-              تم تصميم هذه المنصة لمساعدة فرق الإنقاذ والباحثين في فحص صور ومقاطع الكوارث والزلازل والأبنية المنهارة، لكشف الأشخاص المحتجزين والأطراف الجزئية بدقة عالية ومحلياً بدون الحاجة لأي اتصال بالإنترنت.
-            </p>
-          </div>
-          <div className="disaster-hero-action">
-            <Button
-              variant={rescueMode ? "default" : "outline"}
-              size="sm"
-              className={cn("rescue-toggle-btn", rescueMode && "rescue-toggle-active")}
-              onClick={() => {
-                const next = !rescueMode;
-                setRescueMode(next);
-                if (imageSrc && status === "complete") {
-                  setTimeout(() => void analyze(), 50);
-                }
-              }}
-            >
-              <Flame size={14} className={rescueMode ? "animate-pulse" : ""} />
-              <span>{rescueMode ? "وضع الكوارث مفعّل" : "تفعيل وضع الكوارث"}</span>
-            </Button>
           </div>
         </section>
 
@@ -836,17 +757,11 @@ export default function Home() {
                 <strong>{detections.length}</strong>
               </div>
               <div className="stat">
-                <span>مرشحو الإنقاذ / أفراد</span>
-                <strong className={rescueCandidateCount > 0 ? "text-amber-600 dark:text-amber-400" : ""}>
-                  {rescueCandidateCount}
-                </strong>
-              </div>
-              <div className="stat">
-                <span>متوسط الثقة الدقيقة</span>
+                <span>متوسط الثقة</span>
                 <strong>{averageConfidence ? `${averageConfidence}%` : "—"}</strong>
               </div>
               <div className="stat">
-                <span>زمن الاستدلال المحلي</span>
+                <span>زمن الاستدلال</span>
                 <strong>{duration ? `${duration.toFixed(2)}s` : "—"}</strong>
               </div>
               <div className="stat stat-status">
@@ -928,7 +843,6 @@ export default function Home() {
                           onLoad={() => {
                             setError("");
                             requestAnimationFrame(recalculateImageLayout);
-                            if (status === "idle") void analyze();
                           }}
                         />
                         {status === "scanning" && <div className="scan-sweep" />}
@@ -937,9 +851,9 @@ export default function Home() {
                           const isActive = item.id === activeDetection?.id;
                           const isRescueItem = item.sourceModel?.includes("Rescue") || item.label.includes("person");
                           const displayBox = getBoxInImageSpace(item.box, imageLayout);
-                          const boxColor = isRescueItem ? "#dc2626" : item.isUnknown ? "#d97706" : color.accent;
+                          const boxColor = isRescueItem ? "#dc2626" : item.isUnknown ? "#e78a2f" : color.accent;
                           const bgColor = isActive
-                            ? (isRescueItem ? "rgba(220,38,38,.16)" : item.isUnknown ? "rgba(217,119,6,.16)" : color.background)
+                            ? (isRescueItem ? "rgba(220,38,38,.16)" : item.isUnknown ? "rgba(231,138,47,.16)" : color.background)
                             : "transparent";
 
                           return (
@@ -981,16 +895,16 @@ export default function Home() {
                     {(status === "loading" || status === "scanning") && (
                       <div className="loading-overlay">
                         <Loader2 size={32} className="loader-spin" />
-                        <strong>{status === "loading" ? "تجهيز نماذج الذكاء الاصطناعي محلياً…" : "يمسح الصورة بدقة متعددة المقاييس…"}</strong>
-                        <span>تظهر الصناديق فور اكتشافها مع الاستخراج المتزامن للنصوص OCR.</span>
-                        <Progress value={status === "loading" ? modelProgress : 70} className="model-progress" />
+                        <strong>{status === "loading" ? "تجهيز النموذج المحلي…" : "يمسح الصورة بدقة متعددة المقاييس…"}</strong>
+                        <span>تظهر الصناديق فور اكتمال التحليل بدون تعليق الواجهة.</span>
+                        <Progress value={status === "loading" ? modelProgress : 75} className="model-progress" />
                       </div>
                     )}
 
                     {!detections.length && status === "idle" && imageSrc && (
                       <div className="canvas-empty">
                         <Crosshair size={32} />
-                        <span>اضغط «حلّل الصورة» لبدء الكشف الذكي</span>
+                        <span>اضغط «بدء التحليل البصري» لمعالجة الصورة</span>
                         <small>يمكنك تحريك وتكبير الصورة بعد اكتمال النتائج</small>
                       </div>
                     )}
@@ -1057,6 +971,26 @@ export default function Home() {
                     </Button>
                   </div>
 
+                  {/* Disaster Rescue Mode Toggle — Neatly Placed Under Upload Dropzone */}
+                  <div className="rescue-switch-row">
+                    <div className="rescue-switch-info">
+                      <Flame size={16} className={rescueMode ? "text-amber-600" : "text-slate-400"} />
+                      <div>
+                        <strong>وضع البحث في الكوارث والأنقاض</strong>
+                        <span>كشف عميق للأشخاص المحتجزين والأطراف الجزئية</span>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant={rescueMode ? "default" : "outline"}
+                      size="sm"
+                      className={cn("rescue-switch-btn", rescueMode && "rescue-switch-btn-active")}
+                      onClick={() => setRescueMode(!rescueMode)}
+                    >
+                      {rescueMode ? "مفعّل" : "معطّل"}
+                    </Button>
+                  </div>
+
                   <div className="selected-file">
                     <FileImage size={17} />
                     <div>
@@ -1071,7 +1005,7 @@ export default function Home() {
                   </div>
 
                   <div className="sample-links">
-                    <span>أو جرب عينة جاهزة فوراً:</span>
+                    <span>أو جرب عينة سريعة:</span>
                     <div>
                       {SAMPLE_IMAGES.map((sample) => (
                         <button key={sample.url} type="button" onClick={() => chooseSample(sample)}>
@@ -1079,25 +1013,6 @@ export default function Home() {
                         </button>
                       ))}
                     </div>
-                  </div>
-
-                  {/* Rescue Mode Toggle Inside Card */}
-                  <div className="p-3 my-2 rounded-lg border border-amber-500/30 bg-amber-500/5 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <Flame size={16} className="text-amber-600 dark:text-amber-400" />
-                      <div>
-                        <strong className="text-xs text-foreground block">وضع البحث في الكوارث</strong>
-                        <span className="text-[10px] text-muted-foreground block">مسح عميق للأشخاص والأنقاض</span>
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant={rescueMode ? "default" : "outline"}
-                      className={cn("h-7 text-xs px-2.5", rescueMode ? "bg-amber-600 hover:bg-amber-500 text-white" : "")}
-                      onClick={() => setRescueMode(!rescueMode)}
-                    >
-                      {rescueMode ? "مفعّل" : "تعطيل"}
-                    </Button>
                   </div>
 
                   <Button
@@ -1124,9 +1039,11 @@ export default function Home() {
                     <button type="button" className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>
                       الكل ({detections.length})
                     </button>
-                    <button type="button" className={filter === "rescue" ? "active" : ""} onClick={() => setFilter("rescue")}>
-                      إنقاذ / أفراد ({rescueCandidateCount})
-                    </button>
+                    {rescueCandidateCount > 0 && (
+                      <button type="button" className={filter === "rescue" ? "active" : ""} onClick={() => setFilter("rescue")}>
+                        إنقاذ ({rescueCandidateCount})
+                      </button>
+                    )}
                     <button type="button" className={filter === "known" ? "active" : ""} onClick={() => setFilter("known")}>
                       مؤكد
                     </button>
@@ -1160,7 +1077,7 @@ export default function Home() {
                             />
                             <span
                               className="result-color"
-                              style={{ background: isRescueItem ? "#dc2626" : item.isUnknown ? "#d97706" : COLORS[index % COLORS.length].accent }}
+                              style={{ background: isRescueItem ? "#dc2626" : item.isUnknown ? "#e78a2f" : COLORS[index % COLORS.length].accent }}
                             />
                             <span className="result-label">
                               <strong>{displayDetectionLabel(item)}</strong>
@@ -1175,14 +1092,14 @@ export default function Home() {
                       <div className="results-empty">
                         <Gauge size={24} />
                         <span>{status === "idle" ? "بانتظار بدء التحليل" : "لم يجد النموذج كائنات تطابق هذا الفلتر"}</span>
-                        <small>{status === "idle" ? "ارفع الصورة ثم اضغط «بدء التحليل البصري»" : "جرّب تغيير الفلتر أو تفعيل وضع الكوارث"}</small>
+                        <small>{status === "idle" ? "اضغط «بدء التحليل البصري» للفحص" : "جرّب تغيير الفلتر"}</small>
                       </div>
                     )}
                   </div>
 
                   <div className="model-note">
                     <ShieldCheck size={15} />
-                    <span>الاستدلال يتم داخل المتصفح بالكامل، لا يتم إرسال أو تخزين صورك خارج حاسوبك.</span>
+                    <span>الاستدلال يتم داخل المتصفح بالكامل، لا يتم إرسال صورك لأي خادم خارجي.</span>
                   </div>
                 </section>
 
@@ -1221,7 +1138,7 @@ export default function Home() {
 
                   {ocrStatus === "idle" && (
                     <div className="ocr-empty">
-                      سيتم استخراج وقراءة النصوص العربية والإنجليزية تلقائياً فور بدء التحليل.
+                      سيتم استخراج النصوص العربية والإنجليزية تلقائياً عند بدء التحليل.
                     </div>
                   )}
                 </section>
@@ -1258,7 +1175,7 @@ export default function Home() {
                 <span className="card-eyebrow">REAL-TIME VIDEO TRACKING</span>
                 <h2>تتبّع الكائنات عبر مقاطع الفيديو</h2>
                 <p>
-                  يحلل النظام الإطارات المتتابعة محلياً على كرت الشاشة، ويربط الكائن المتحرك بمعرّف ثابت (Stable Track ID) مع الإبقاء على مسار الصوت الأصلي للفيديو.
+                  يحلل النظام الإطارات المتتابعة محلياً، ويربط الكائن المتحرك بمعرّف ثابت (Stable Track ID) مع الإبقاء على مسار الصوت الأصلي للفيديو.
                 </p>
               </div>
               <Video size={24} />
@@ -1427,13 +1344,13 @@ export default function Home() {
         {/* Footer */}
         <footer className="page-footer">
           <div className="footer-credits">
-            <span><ShieldCheck size={14} className="text-emerald-500" /> معالجة محلية خاصة بالكامل</span>
-            <span className="dev-credit">
-              تم التطوير بواسطة: <strong>Mohammed Salahuldeen Dev</strong>
-            </span>
+            <span><ShieldCheck size={14} className="text-emerald-600" /> معالجة محلية خاصة بالكامل</span>
+            <button type="button" className="text-xs text-muted-foreground hover:text-primary transition-colors" onClick={() => setAboutOpen(true)}>
+              حول المنصة والمطور
+            </button>
           </div>
           <span className="mono text-[10px] text-muted-foreground">
-            VISION INSPECTOR / DISASTER RESCUE AI v1.3.0
+            VISION INSPECTOR LOCAL AI v1.3.0
           </span>
         </footer>
       </main>

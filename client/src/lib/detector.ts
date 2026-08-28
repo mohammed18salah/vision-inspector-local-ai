@@ -1,6 +1,6 @@
 /*
- * Apple-like practical UI reminder: this service owns real model state and should expose
- * concise, trustworthy progress rather than decorative demo states.
+ * Vision Inspector Local AI — Optimized Inference Engine
+ * Fast on-device inference using WebGPU / WASM with UI-yielding and memory safety.
  */
 import { env, pipeline, RawImage, type ProgressCallback } from "@huggingface/transformers";
 import type { VisionDetection } from "@shared/vision-core";
@@ -78,17 +78,58 @@ export async function loadDetector(onProgress?: ProgressCallback) {
   return detectorPromise;
 }
 
+// Yield execution to the browser event loop so animations & UI remain buttery smooth
+export function yieldToMainThread(ms = 0): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Fast downscaling for high-resolution images to prevent tab freeze and memory spikes
+export function extractScaledRawImage(image: HTMLImageElement, maxDim = 1024): { rawImage: RawImage; width: number; height: number } {
+  const origW = image.naturalWidth || image.width;
+  const origH = image.naturalHeight || image.height;
+  if (!origW || !origH) {
+    return { rawImage: RawImage.fromCanvas(document.createElement("canvas")), width: 1, height: 1 };
+  }
+  const scale = Math.min(1, maxDim / Math.max(origW, origH));
+  const targetW = Math.max(1, Math.round(origW * scale));
+  const targetH = Math.max(1, Math.round(origH * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = targetW;
+  canvas.height = targetH;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.drawImage(image, 0, 0, targetW, targetH);
+  }
+  return { rawImage: RawImage.fromCanvas(canvas), width: targetW, height: targetH };
+}
+
 export async function detectObjects(
   image: string | HTMLImageElement | RawImage,
   options: { threshold?: number; onProgress?: ProgressCallback } = {},
 ): Promise<LocalDetection[]> {
+  await yieldToMainThread(0);
   const detector = await loadDetector(options.onProgress);
-  const rawImage = image instanceof RawImage
-    ? image
-    : await RawImage.fromURL(typeof image === "string" ? image : image.src);
+  let rawImage: RawImage;
+  let sourceWidth: number;
+  let sourceHeight: number;
+
+  if (image instanceof HTMLImageElement) {
+    const scaled = extractScaledRawImage(image, 1024);
+    rawImage = scaled.rawImage;
+    sourceWidth = scaled.width;
+    sourceHeight = scaled.height;
+  } else if (image instanceof RawImage) {
+    rawImage = image;
+    sourceWidth = image.width;
+    sourceHeight = image.height;
+  } else {
+    rawImage = await RawImage.fromURL(image);
+    sourceWidth = rawImage.width;
+    sourceHeight = rawImage.height;
+  }
+
   const result = await detector(rawImage, { threshold: options.threshold ?? 0.28 });
-  const sourceWidth = image instanceof RawImage ? image.width : typeof image === "string" ? 1 : image.naturalWidth;
-  const sourceHeight = image instanceof RawImage ? image.height : typeof image === "string" ? 1 : image.naturalHeight;
   return result
     .map((item, index) => {
       const box = item.box;

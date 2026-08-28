@@ -1,5 +1,5 @@
 import { env, pipeline, RawImage, type ProgressCallback } from "@huggingface/transformers";
-import type { LocalDetection } from "./detector";
+import { extractScaledRawImage, yieldToMainThread, type LocalDetection } from "./detector";
 
 env.allowLocalModels = false;
 env.allowRemoteModels = true;
@@ -7,17 +7,6 @@ env.useBrowserCache = true;
 env.backends.onnx.logLevel = "error";
 
 const MODEL_ID = "onnx-community/grounding-dino-tiny-ONNX";
-// Primary categories plus disaster rescue / occluded human detection queries
-const CANDIDATE_LABELS = [
-  { query: "a person.", threshold: 0.3 },
-  { query: "a person trapped under rubble.", threshold: 0.2 },
-  { query: "a human body or limb in debris.", threshold: 0.2 },
-  { query: "a person partially visible.", threshold: 0.2 },
-  { query: "a bird.", threshold: 0.35 },
-  { query: "a turtle.", threshold: 0.4 },
-  { query: "a building.", threshold: 0.45 },
-  { query: "a vehicle.", threshold: 0.35 },
-];
 export const OPEN_VOCABULARY_CONFIRMED_CONFIDENCE = 45;
 
 type DetectorResult = { score: number; label: string; box: { xmin: number; ymin: number; xmax: number; ymax: number } };
@@ -61,28 +50,45 @@ export async function detectOpenVocabularyObjects(
     onCategoryProgress?: (completed: number, total: number) => void;
   } = {},
 ): Promise<LocalDetection[]> {
+  await yieldToMainThread(10);
   const detector = await loadOpenVocabularyDetector(options.onProgress);
-  const rawImage = image instanceof RawImage ? image : await RawImage.fromURL(image.src);
-  const result: DetectorResult[] = [];
-  const labelsToScan = options.rescueMode
-    ? [
-        { query: "a person trapped under rubble.", threshold: 0.15 },
-        { query: "a human body or limb in debris.", threshold: 0.15 },
-        { query: "a person partially visible.", threshold: 0.16 },
-        { query: "a person.", threshold: 0.2 },
-        { query: "a building.", threshold: 0.35 },
-        { query: "a vehicle.", threshold: 0.3 },
-      ]
-    : CANDIDATE_LABELS;
+  let rawImage: RawImage;
+  let sourceWidth: number;
+  let sourceHeight: number;
 
-  for (let index = 0; index < labelsToScan.length; index += 1) {
-    const candidate = labelsToScan[index]!;
+  if (image instanceof HTMLImageElement) {
+    const scaled = extractScaledRawImage(image, 800); // 800px max for ultra-fast zero-shot detection
+    rawImage = scaled.rawImage;
+    sourceWidth = scaled.width;
+    sourceHeight = scaled.height;
+  } else {
+    rawImage = image;
+    sourceWidth = image.width;
+    sourceHeight = image.height;
+  }
+
+  const result: DetectorResult[] = [];
+  const candidateQueries = options.rescueMode
+    ? [
+        { query: "a person trapped under rubble.", threshold: 0.16 },
+        { query: "a human body or limb in debris.", threshold: 0.16 },
+        { query: "a person.", threshold: 0.22 },
+        { query: "a building.", threshold: 0.38 },
+      ]
+    : [
+        { query: "a bird.", threshold: 0.35 },
+        { query: "a turtle.", threshold: 0.4 },
+        { query: "a building.", threshold: 0.45 },
+      ];
+
+  for (let index = 0; index < candidateQueries.length; index += 1) {
+    await yieldToMainThread(10);
+    const candidate = candidateQueries[index]!;
     const matches = await detector(rawImage, [candidate.query], { threshold: candidate.threshold, top_k: 2 });
     result.push(...matches);
-    options.onCategoryProgress?.(index + 1, labelsToScan.length);
+    options.onCategoryProgress?.(index + 1, candidateQueries.length);
   }
-  const width = rawImage.width;
-  const height = rawImage.height;
+
   return result.map((item, index) => {
     const label = normalizeOpenVocabularyLabel(item.label);
     const confidence = Math.round(item.score * 100);
@@ -91,10 +97,10 @@ export async function detectOpenVocabularyObjects(
       label,
       confidence,
       box: {
-        x: (item.box.xmin / width) * 100,
-        y: (item.box.ymin / height) * 100,
-        width: ((item.box.xmax - item.box.xmin) / width) * 100,
-        height: ((item.box.ymax - item.box.ymin) / height) * 100,
+        x: (item.box.xmin / sourceWidth) * 100,
+        y: (item.box.ymin / sourceHeight) * 100,
+        width: ((item.box.xmax - item.box.xmin) / sourceWidth) * 100,
+        height: ((item.box.ymax - item.box.ymin) / sourceHeight) * 100,
       },
       sourceModel: options.rescueMode ? "Grounding DINO · Rescue Mode" : "Grounding DINO Tiny · local",
       isUnknown: label === "unknown" || isOpenVocabularyCandidate(confidence),
