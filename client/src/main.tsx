@@ -13,7 +13,19 @@ import "./index.css";
 // non-fatal node-placement warning; genuine errors still reach the collector.
 installOnnxRuntimeDiagnosticFilter();
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Data is considered fresh for 60 s — prevents redundant background refetches
+      // on every component mount or window focus event.
+      staleTime: 60 * 1000,
+      // Keep inactive query results in memory for 5 minutes so navigating back
+      // to a page shows cached data immediately.
+      gcTime: 5 * 60 * 1000,
+      retry: 1,
+    },
+  },
+});
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;

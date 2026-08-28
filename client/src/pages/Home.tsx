@@ -132,6 +132,10 @@ export default function Home() {
   const videoRateRef = useRef(1);
   const panRef = useRef<{ pointerX: number; pointerY: number; startX: number; startY: number } | null>(null);
   const lastPulseRef = useRef(0);
+  // Reusable canvas for video frame extraction — avoids per-frame allocation.
+  const videoFrameCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  // Cache analysis results keyed by imageSrc so the same image is never re-inferred.
+  const analysisCacheRef = useRef<Map<string, { detections: LocalDetection[]; duration: number }>>(new Map());
   const [imageSrc, setImageSrc] = useState(mountainSmokeMode ? MOUNTAIN_SMOKE_IMAGE : smokeMode ? SMOKE_IMAGE : "");
   const [analysisMode, setAnalysisMode] = useState<AnalysisMode>(() => (smokeMode || mountainSmokeMode ? "image" : smokeVideoMode ? "video" : null));
   const [fileName, setFileName] = useState(mountainSmokeMode ? "mountain multi-subject test" : smokeMode ? "smoke test" : "لم يتم اختيار صورة");
@@ -203,6 +207,11 @@ export default function Home() {
     if (videoLoopRef.current) window.cancelAnimationFrame(videoLoopRef.current);
     if (videoSrc.startsWith("blob:")) URL.revokeObjectURL(videoSrc);
   }, [videoSrc]);
+
+  // Revoke blob URL when imageSrc changes or component unmounts to prevent memory leaks.
+  useEffect(() => () => {
+    if (imageSrc.startsWith("blob:")) URL.revokeObjectURL(imageSrc);
+  }, [imageSrc]);
 
   const recalculateVideoLayout = () => {
     const stage = videoStageRef.current;
@@ -303,10 +312,17 @@ export default function Home() {
     setVideoStatus("tracking");
     setVideoError("");
     try {
-      const frameCanvas = document.createElement("canvas");
+      // Reuse a single off-screen canvas across frames to avoid GC pressure.
+      let frameCanvas = videoFrameCanvasRef.current;
       const scale = Math.min(1, 960 / Math.max(video.videoWidth, video.videoHeight));
-      frameCanvas.width = Math.max(1, Math.round(video.videoWidth * scale));
-      frameCanvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+      const targetW = Math.max(1, Math.round(video.videoWidth * scale));
+      const targetH = Math.max(1, Math.round(video.videoHeight * scale));
+      if (!frameCanvas || frameCanvas.width !== targetW || frameCanvas.height !== targetH) {
+        frameCanvas = document.createElement("canvas");
+        frameCanvas.width = targetW;
+        frameCanvas.height = targetH;
+        videoFrameCanvasRef.current = frameCanvas;
+      }
       const frameContext = frameCanvas.getContext("2d");
       if (!frameContext) throw new Error("تعذر تجهيز إطار الفيديو للتحليل.");
       frameContext.drawImage(video, 0, 0, frameCanvas.width, frameCanvas.height);
@@ -405,7 +421,11 @@ export default function Home() {
       setError("يرجى اختيار ملف صورة صالح بصيغة JPG أو PNG أو WebP.");
       return;
     }
-    setImageSrc(URL.createObjectURL(file));
+    // Revoke the previous blob URL immediately to free memory.
+    setImageSrc((prev) => {
+      if (prev.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
     setFileName(file.name);
     setFileSize(file.size);
     setOcrResult(null);
@@ -462,46 +482,65 @@ export default function Home() {
         setOcrStatus("error");
       });
     try {
-      let result = await detectImageWithDetailPass(sourceImage, {
-        onProgress: (event) => {
-          if (event && typeof event === "object" && "progress" in event) {
-            const value = Number((event as { progress?: number }).progress);
-            if (Number.isFinite(value)) {
-              const progress = Math.max(4, Math.min(92, Math.round(value)));
-              setModelProgress(progress);
-              if (progress >= lastPulseRef.current + 24) {
-                lastPulseRef.current = progress;
-                playScanSound("pulse");
-              }
-            }
-          }
-          setStatus("scanning");
-        },
-        onDetailProgress: (completedTiles, totalTiles) => {
-          setStatus("scanning");
-          setModelProgress(Math.max(74, Math.min(96, 74 + Math.round((completedTiles / totalTiles) * 22))));
-          if (completedTiles === 1) playScanSound("pulse");
-        },
-      });
-      if (result.length < 5) {
+      // Return cached detection results instantly if the same image was already analyzed.
+      const cached = analysisCacheRef.current.get(imageSrc);
+      let result: LocalDetection[];
+      let elapsedSeconds: number;
+      if (cached) {
+        result = cached.detections;
+        elapsedSeconds = cached.duration;
+        setModelProgress(100);
         setStatus("scanning");
-        setModelProgress(82);
-        const openVocabularyDetections = await detectOpenVocabularyObjects(sourceImage, {
+      } else {
+        let rawResult = await detectImageWithDetailPass(sourceImage, {
           onProgress: (event) => {
             if (event && typeof event === "object" && "progress" in event) {
               const value = Number((event as { progress?: number }).progress);
-              if (Number.isFinite(value)) setModelProgress(Math.max(82, Math.min(97, 82 + Math.round(value * 15))));
+              if (Number.isFinite(value)) {
+                const progress = Math.max(4, Math.min(92, Math.round(value)));
+                setModelProgress(progress);
+                if (progress >= lastPulseRef.current + 24) {
+                  lastPulseRef.current = progress;
+                  playScanSound("pulse");
+                }
+              }
             }
+            setStatus("scanning");
           },
-          onCategoryProgress: (completed, total) => {
-            setModelProgress(Math.max(84, Math.min(98, 84 + Math.round((completed / total) * 14))));
+          onDetailProgress: (completedTiles, totalTiles) => {
+            setStatus("scanning");
+            setModelProgress(Math.max(74, Math.min(96, 74 + Math.round((completedTiles / totalTiles) * 22))));
+            if (completedTiles === 1) playScanSound("pulse");
           },
         });
-        result = mergeDetections([...result, ...openVocabularyDetections], 0.42);
+        if (rawResult.length < 5) {
+          setStatus("scanning");
+          setModelProgress(82);
+          const openVocabularyDetections = await detectOpenVocabularyObjects(sourceImage, {
+            onProgress: (event) => {
+              if (event && typeof event === "object" && "progress" in event) {
+                const value = Number((event as { progress?: number }).progress);
+                if (Number.isFinite(value)) setModelProgress(Math.max(82, Math.min(97, 82 + Math.round(value * 15))));
+              }
+            },
+            onCategoryProgress: (completed, total) => {
+              setModelProgress(Math.max(84, Math.min(98, 84 + Math.round((completed / total) * 14))));
+            },
+          });
+          rawResult = mergeDetections([...rawResult, ...openVocabularyDetections], 0.42);
+        }
+        result = rawResult;
+        elapsedSeconds = Math.max(0.01, (performance.now() - started) / 1000);
+        // Cache the result — keep at most 10 entries to bound memory usage.
+        if (analysisCacheRef.current.size >= 10) {
+          const oldestKey = analysisCacheRef.current.keys().next().value;
+          if (oldestKey !== undefined) analysisCacheRef.current.delete(oldestKey);
+        }
+        analysisCacheRef.current.set(imageSrc, { detections: result, duration: elapsedSeconds });
       }
       setDetections(result);
       setActiveId(result[0]?.id ?? null);
-      setDuration(Math.max(0.01, (performance.now() - started) / 1000));
+      setDuration(elapsedSeconds);
       setModelProgress(100);
       setStatus("complete");
       if (result.length) playScanSound("detected");

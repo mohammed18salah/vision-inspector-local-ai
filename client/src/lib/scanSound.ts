@@ -39,4 +39,9 @@ export function playScanSound(cue: ScanSoundCue) {
   oscillator.connect(gain).connect(context.destination);
   oscillator.start(now);
   oscillator.stop(now + pattern.duration + 0.02);
+  // Disconnect nodes once done to release AudioContext resources and prevent memory leaks.
+  oscillator.onended = () => {
+    oscillator.disconnect();
+    gain.disconnect();
+  };
 }

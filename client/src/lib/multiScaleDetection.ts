@@ -17,14 +17,30 @@ export function getDetailTiles(width: number, height: number): DetailTile[] {
 export const detectionIou = boxIou;
 export const mergeDetections = mergeSharedDetections;
 
+// A small pool of off-screen canvases reused across tile crops to reduce GC pressure.
+const CANVAS_POOL_MAX = 4;
+const canvasPool: HTMLCanvasElement[] = [];
+
+function acquireCanvas(width: number, height: number): HTMLCanvasElement {
+  const canvas = canvasPool.pop() ?? document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  return canvas;
+}
+
+function releaseCanvas(canvas: HTMLCanvasElement) {
+  if (canvasPool.length < CANVAS_POOL_MAX) canvasPool.push(canvas);
+}
+
 function cropImage(image: HTMLImageElement, tile: DetailTile) {
-  const canvas = document.createElement("canvas");
-  canvas.width = tile.width;
-  canvas.height = tile.height;
+  const canvas = acquireCanvas(tile.width, tile.height);
   const context = canvas.getContext("2d");
   if (!context) throw new Error("تعذر تجهيز جزء الصورة للتحليل الدقيق.");
   context.drawImage(image, tile.x, tile.y, tile.width, tile.height, 0, 0, tile.width, tile.height);
-  return RawImage.fromCanvas(canvas);
+  const rawImage = RawImage.fromCanvas(canvas);
+  // Return the canvas to the pool immediately after pixel data is extracted.
+  releaseCanvas(canvas);
+  return rawImage;
 }
 
 function projectTileDetection(detection: LocalDetection, tile: DetailTile, imageWidth: number, imageHeight: number): LocalDetection {

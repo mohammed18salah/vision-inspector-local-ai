@@ -29,7 +29,8 @@ function getWorker(onProgress?: (progress: number) => void) {
       corePath: assetUrl("tesseract-core-simd.wasm.js"),
       langPath: assetUrl("lang/"),
       gzip: false,
-      cacheMethod: "none",
+      // Use IndexedDB cache so language model data is not re-downloaded on every page load.
+      cacheMethod: "write",
       logger: (message) => {
         if (typeof message.progress === "number") onProgress?.(message.progress);
       },
