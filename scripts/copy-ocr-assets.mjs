@@ -3,7 +3,7 @@ import path from "node:path";
 
 const projectRoot = path.resolve(import.meta.dirname, "..");
 const source = path.join(projectRoot, "desktop", "renderer", "public", "tesseract");
-const destination = path.join(projectRoot, "dist", "ocr-assets");
+const destination = path.join(projectRoot, "dist", "public", "ocr-assets");
 
 await rm(destination, { recursive: true, force: true });
 await mkdir(path.dirname(destination), { recursive: true });

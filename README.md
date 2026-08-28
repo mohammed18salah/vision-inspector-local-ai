@@ -76,6 +76,19 @@ pnpm desktop:check
 pnpm desktop:build
 ```
 
+### Deploy to Vercel
+
+This repository includes `vercel.json`. It builds the Vite client into **`dist/public`**, serves the single-page application through `index.html`, and routes `/api/*` to a Vercel Function that provides only the constrained model-download API. Do **not** set Vercel's Output Directory to `dist`: doing so can expose the compiled server bundle (`dist/index.js`) as a static page rather than serving the application.
+
+| Vercel setting | Required value |
+| --- | --- |
+| Framework Preset | `Vite` |
+| Install Command | `pnpm install --frozen-lockfile` |
+| Build Command | `pnpm build` |
+| Output Directory | `dist/public` |
+
+After pushing this configuration, redeploy the latest `main` commit. OCR runtime files are emitted as same-origin static files under `/ocr-assets/`; the function serves the allow-listed model proxy under `/api/model` and the ONNX runtime bootstrap under `/api/ort`. The first model download still needs access to the selected public model repository.
+
 ## Architecture
 
 ```text

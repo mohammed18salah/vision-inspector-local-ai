@@ -16,9 +16,14 @@ export type LocalOcrResult = {
 
 let workerPromise: ReturnType<typeof createWorker> | null = null;
 
+// The production build copies these files to dist/public/ocr-assets. Serving
+// them as same-origin static assets works in the local Express server and on
+// Vercel without making the serverless API function locate OCR language data.
+const OCR_RUNTIME_BASE = import.meta.env.DEV ? "/api/ocr/" : "/ocr-assets/";
+
 function getWorker(onProgress?: (progress: number) => void) {
   if (!workerPromise) {
-    const assetUrl = (path: string) => new URL(`/api/ocr/${path}`, window.location.href).href;
+    const assetUrl = (path: string) => new URL(`${OCR_RUNTIME_BASE}${path}`, window.location.href).href;
     workerPromise = createWorker(["eng", "ara"], undefined, {
       workerPath: assetUrl("worker.min.js"),
       corePath: assetUrl("tesseract-core-simd.wasm.js"),
