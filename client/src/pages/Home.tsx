@@ -12,9 +12,9 @@ import { detectImageWithDetailPass, mergeDetections } from "@/lib/multiScaleDete
 import { detectOpenVocabularyObjects } from "@/lib/openVocabularyDetector";
 import { playScanSound, setScanSoundEnabled } from "@/lib/scanSound";
 import { matchVideoTracks, type TrackedDetection } from "@/lib/videoTracking";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { AboutModal } from "@/components/AboutModal";
 import { cn } from "@/lib/utils";
 import {
   AlertCircle,
@@ -661,15 +661,16 @@ export default function Home() {
             {soundEnabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
           </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            className="about-header-btn"
-            onClick={() => setAboutOpen(true)}
-          >
-            <Sparkles size={14} />
-            <span>حول المنصة</span>
-          </Button>
+          <Link href="/about">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="about-header-btn gap-1.5"
+            >
+              <Sparkles size={14} />
+              <span>حول المنصة</span>
+            </Button>
+          </Link>
         </div>
       </header>
 
@@ -697,9 +698,9 @@ export default function Home() {
               <a className="project-link" href={REPOSITORY_URL} target="_blank" rel="noreferrer">
                 <Github size={15} /> المستودع المفتوح على GitHub
               </a>
-              <button type="button" className="project-link" onClick={() => setAboutOpen(true)}>
+              <Link href="/about" className="project-link gap-1.5">
                 <Info size={15} /> تفاصيل المنصة والمطور
-              </button>
+              </Link>
             </div>
           </div>
 
@@ -1345,18 +1346,15 @@ export default function Home() {
         <footer className="page-footer">
           <div className="footer-credits">
             <span><ShieldCheck size={14} className="text-emerald-600" /> معالجة محلية خاصة بالكامل</span>
-            <button type="button" className="text-xs text-muted-foreground hover:text-primary transition-colors" onClick={() => setAboutOpen(true)}>
+            <Link href="/about" className="text-xs text-muted-foreground hover:text-primary transition-colors">
               حول المنصة والمطور
-            </button>
+            </Link>
           </div>
           <span className="mono text-[10px] text-muted-foreground">
             VISION INSPECTOR LOCAL AI v1.3.0
           </span>
         </footer>
       </main>
-
-      {/* About Platform & Developer Modal */}
-      <AboutModal open={aboutOpen} onOpenChange={setAboutOpen} />
     </div>
   );
 }
