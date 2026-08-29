@@ -264,6 +264,14 @@ export default function Home() {
     return () => observer.disconnect();
   }, [videoSrc]);
 
+  const zoomRef = useRef(zoom);
+  const panRefState = useRef(pan);
+  const imageLayoutRef = useRef<ImageLayout>(imageLayout);
+
+  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
+  useEffect(() => { panRefState.current = pan; }, [pan]);
+  useEffect(() => { imageLayoutRef.current = imageLayout; }, [imageLayout]);
+
   const focusDetection = (item: LocalDetection) => {
     setActiveId(item.id);
     const targetZoom = 2.1;
@@ -271,27 +279,112 @@ export default function Home() {
     if (!rect || !imageLayout.width || !imageLayout.height) return;
     const centerX = ((item.box.x + item.box.width / 2) / 100) * imageLayout.width;
     const centerY = ((item.box.y + item.box.height / 2) / 100) * imageLayout.height;
+    const nextPan = {
+      x: rect.width / 2 - imageLayout.left - centerX * targetZoom,
+      y: rect.height / 2 - imageLayout.top - centerY * targetZoom,
+    };
+    zoomRef.current = targetZoom;
+    panRefState.current = nextPan;
     setZoom(targetZoom);
-    setPan({ x: rect.width / 2 - imageLayout.left - centerX * targetZoom, y: rect.height / 2 - imageLayout.top - centerY * targetZoom });
+    setPan(nextPan);
   };
 
-  const handleCanvasWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    const nextZoom = Math.max(1, Math.min(3.5, zoom + (event.deltaY < 0 ? 0.18 : -0.18)));
-    if (nextZoom === 1) setPan({ x: 0, y: 0 });
-    setZoom(nextZoom);
+  const zoomToCenter = (delta: number) => {
+    const canvas = canvasRef.current;
+    const layout = imageLayoutRef.current;
+    const currentZoom = zoomRef.current;
+    const currentPan = panRefState.current;
+
+    let nextZoom = Math.max(1, Math.min(4, Number((currentZoom + delta).toFixed(2))));
+    if (Math.abs(nextZoom - 1) < 0.04) nextZoom = 1;
+
+    if (nextZoom === 1) {
+      zoomRef.current = 1;
+      panRefState.current = { x: 0, y: 0 };
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
+      return;
+    }
+
+    if (canvas && layout.width && layout.height) {
+      const rect = canvas.getBoundingClientRect();
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const stageX = (centerX - layout.left - currentPan.x) / currentZoom;
+      const stageY = (centerY - layout.top - currentPan.y) / currentZoom;
+
+      const nextPan = {
+        x: centerX - layout.left - stageX * nextZoom,
+        y: centerY - layout.top - stageY * nextZoom,
+      };
+      zoomRef.current = nextZoom;
+      panRefState.current = nextPan;
+      setZoom(nextZoom);
+      setPan(nextPan);
+    } else {
+      zoomRef.current = nextZoom;
+      setZoom(nextZoom);
+    }
   };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const onNativeWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const layout = imageLayoutRef.current;
+      if (!layout.width || !layout.height) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = event.clientX - rect.left;
+      const mouseY = event.clientY - rect.top;
+
+      const currentZoom = zoomRef.current;
+      const currentPan = panRefState.current;
+
+      const stageX = (mouseX - layout.left - currentPan.x) / currentZoom;
+      const stageY = (mouseY - layout.top - currentPan.y) / currentZoom;
+
+      const zoomFactor = event.deltaY < 0 ? 1.14 : 0.88;
+      let nextZoom = Math.max(1, Math.min(4, currentZoom * zoomFactor));
+      if (Math.abs(nextZoom - 1) < 0.04) nextZoom = 1;
+
+      let nextPan = { x: 0, y: 0 };
+      if (nextZoom > 1) {
+        nextPan = {
+          x: mouseX - layout.left - stageX * nextZoom,
+          y: mouseY - layout.top - stageY * nextZoom,
+        };
+      }
+
+      zoomRef.current = nextZoom;
+      panRefState.current = nextPan;
+      setZoom(nextZoom);
+      setPan(nextPan);
+    };
+
+    canvas.addEventListener("wheel", onNativeWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", onNativeWheel);
+  }, [imageSrc]);
 
   const startPan = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if ((event.target as HTMLElement).closest(".real-box")) return;
-    panRef.current = { pointerX: event.clientX, pointerY: event.clientY, startX: pan.x, startY: pan.y };
+    if ((event.target as HTMLElement).closest(".real-box") || (event.target as HTMLElement).closest(".canvas-controls")) return;
+    panRef.current = { pointerX: event.clientX, pointerY: event.clientY, startX: panRefState.current.x, startY: panRefState.current.y };
     event.currentTarget.setPointerCapture(event.pointerId);
     setIsPanning(true);
   };
 
   const movePan = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!panRef.current) return;
-    setPan({ x: panRef.current.startX + event.clientX - panRef.current.pointerX, y: panRef.current.startY + event.clientY - panRef.current.pointerY });
+    const nextPan = {
+      x: panRef.current.startX + event.clientX - panRef.current.pointerX,
+      y: panRef.current.startY + event.clientY - panRef.current.pointerY,
+    };
+    panRefState.current = nextPan;
+    setPan(nextPan);
   };
 
   const endPan = () => { panRef.current = null; setIsPanning(false); };
@@ -817,7 +910,6 @@ export default function Home() {
                   <div
                     ref={canvasRef}
                     className={cn("image-canvas interactive-canvas", isPanning && "canvas-panning")}
-                    onWheel={handleCanvasWheel}
                     onPointerDown={startPan}
                     onPointerMove={movePan}
                     onPointerUp={endPan}
@@ -912,14 +1004,14 @@ export default function Home() {
 
                     {imageSrc && (
                       <div className="canvas-controls">
-                        <button type="button" onClick={() => setZoom(Math.max(1, zoom - 0.2))} aria-label="تصغير">
+                        <button type="button" onClick={() => zoomToCenter(-0.25)} aria-label="تصغير">
                           <Minus size={15} />
                         </button>
                         <span className="mono">{Math.round(zoom * 100)}%</span>
-                        <button type="button" onClick={() => setZoom(Math.min(3.5, zoom + 0.2))} aria-label="تكبير">
+                        <button type="button" onClick={() => zoomToCenter(0.25)} aria-label="تكبير">
                           <Plus size={15} />
                         </button>
-                        <button type="button" onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} aria-label="إعادة توسيط">
+                        <button type="button" onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); zoomRef.current = 1; panRefState.current = { x: 0, y: 0 }; }} aria-label="إعادة توسيط">
                           <Move size={14} />
                         </button>
                       </div>
