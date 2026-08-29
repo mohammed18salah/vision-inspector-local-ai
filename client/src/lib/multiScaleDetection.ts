@@ -62,20 +62,21 @@ export async function detectImageWithDetailPass(
   const baseThreshold = options.threshold ?? (options.rescueMode ? 0.12 : 0.18);
   const overview = await detectObjects(image, { threshold: baseThreshold, onProgress: options.onProgress });
   
-  // In rescue mode, scan tiles if image is large enough; otherwise skip to preserve speed
-  const shouldSkipTiles = !options.rescueMode && (overview.length >= DETAIL_TRIGGER_RESULT_COUNT || image.naturalWidth < 600 || image.naturalHeight < 600);
+  // High-performance strategy: skip extra tile passes if objects found or in standard mode
+  const shouldSkipTiles = !options.rescueMode || overview.length > 0 || image.naturalWidth < 1000 || image.naturalHeight < 1000;
   if (shouldSkipTiles) {
     return mergeDetections(overview);
   }
 
-  const tiles = getDetailTiles(image.naturalWidth, image.naturalHeight);
+  // Only scan 2 targeted quadrants in rescue mode when nothing was found initially
+  const tiles = getDetailTiles(image.naturalWidth, image.naturalHeight).slice(0, 2);
   const detailed: LocalDetection[] = [];
   try {
     for (let index = 0; index < tiles.length; index += 1) {
-      await yieldToMainThread(10); // Yield to keep UI responsive
+      await yieldToMainThread(15);
       const tile = tiles[index]!;
       const tileImage = cropImage(image, tile);
-      const tileDetections = await detectObjects(tileImage, { threshold: options.rescueMode ? 0.12 : 0.16 });
+      const tileDetections = await detectObjects(tileImage, { threshold: options.rescueMode ? 0.10 : 0.15 });
       detailed.push(...tileDetections.map((detection) => projectTileDetection(detection, tile, image.naturalWidth, image.naturalHeight)));
       options.onDetailProgress?.(index + 1, tiles.length);
     }

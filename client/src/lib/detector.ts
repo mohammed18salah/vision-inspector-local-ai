@@ -10,7 +10,7 @@ env.allowRemoteModels = true;
 env.useBrowserCache = true;
 env.backends.onnx.logLevel = "error";
 if (env.backends.onnx.wasm) {
-  env.backends.onnx.wasm.numThreads = 1;
+  env.backends.onnx.wasm.numThreads = Math.max(1, Math.min(4, typeof navigator !== "undefined" ? navigator.hardwareConcurrency || 1 : 1));
 }
 
 type DetectorResult = { score: number; label: string; box: { xmin: number; ymin: number; xmax: number; ymax: number } };

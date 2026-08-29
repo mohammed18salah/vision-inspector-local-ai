@@ -10,7 +10,6 @@ import { exportInspectionPdf } from "@/lib/pdfExport";
 import { buildDetectionCsvRows, toCsv, toExportDetection } from "@/lib/export";
 import { getBoxInImageSpace, getContainedImageLayout, type ImageLayout } from "@/lib/imageLayout";
 import { detectImageWithDetailPass, mergeDetections } from "@/lib/multiScaleDetection";
-import { detectOpenVocabularyObjects } from "@/lib/openVocabularyDetector";
 import { playScanSound, setScanSoundEnabled } from "@/lib/scanSound";
 import { matchVideoTracks, type TrackedDetection } from "@/lib/videoTracking";
 import { Link } from "wouter";
@@ -616,17 +615,17 @@ export default function Home() {
         result = cached.detections;
         elapsedSeconds = cached.duration;
         setModelProgress(100);
-        setStatus("scanning");
+        setStatus("complete");
       } else {
         await yieldToMainThread(10);
-        let rawResult = await detectImageWithDetailPass(sourceImage, {
+        const rawResult = await detectImageWithDetailPass(sourceImage, {
           rescueMode,
           threshold: rescueMode ? 0.12 : 0.18,
           onProgress: (event) => {
             if (event && typeof event === "object" && "progress" in event) {
               const value = Number((event as { progress?: number }).progress);
               if (Number.isFinite(value)) {
-                const progress = Math.max(6, Math.min(90, Math.round(value)));
+                const progress = Math.max(10, Math.min(95, Math.round(value)));
                 setModelProgress(progress);
                 if (progress >= lastPulseRef.current + 25) {
                   lastPulseRef.current = progress;
@@ -638,23 +637,9 @@ export default function Home() {
           },
           onDetailProgress: (completedTiles, totalTiles) => {
             setStatus("scanning");
-            setModelProgress(Math.max(70, Math.min(94, 70 + Math.round((completedTiles / totalTiles) * 24))));
+            setModelProgress(Math.max(75, Math.min(98, 75 + Math.round((completedTiles / totalTiles) * 20))));
           },
         });
-
-        // Run zero-shot detector only when necessary or in rescue mode
-        if (rawResult.length < 5 || rescueMode) {
-          await yieldToMainThread(10);
-          setStatus("scanning");
-          setModelProgress(84);
-          const openVocabularyDetections = await detectOpenVocabularyObjects(sourceImage, {
-            rescueMode,
-            onCategoryProgress: (completed, total) => {
-              setModelProgress(Math.max(84, Math.min(98, 84 + Math.round((completed / total) * 14))));
-            },
-          });
-          rawResult = mergeDetections([...rawResult, ...openVocabularyDetections], 0.38);
-        }
 
         result = rawResult;
         elapsedSeconds = Math.max(0.01, (performance.now() - started) / 1000);
