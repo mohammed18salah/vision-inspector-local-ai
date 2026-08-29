@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent,
 import { RawImage } from "@huggingface/transformers";
 import { detectObjects, getDetectorErrorMessage, getInferenceDevice, yieldToMainThread, type LocalDetection } from "@/lib/detector";
 import { recognizeText, type LocalOcrResult } from "@/lib/ocr";
+import { exportInspectionPdf } from "@/lib/pdfExport";
 import { buildDetectionCsvRows, toCsv, toExportDetection } from "@/lib/export";
 import { getBoxInImageSpace, getContainedImageLayout, type ImageLayout } from "@/lib/imageLayout";
 import { detectImageWithDetailPass, mergeDetections } from "@/lib/multiScaleDetection";
@@ -27,6 +28,7 @@ import {
   Download,
   FileImage,
   FileJson2,
+  FileText,
   Gauge,
   Github,
   ImagePlus,
@@ -592,7 +594,7 @@ export default function Home() {
 
     // Run OCR asynchronously in background so detection starts immediately
     const ocrPromise = recognizeText(sourceImage, { width: sourceImage.naturalWidth, height: sourceImage.naturalHeight }, (progress) => {
-      setOcrProgress(Math.max(2, Math.min(100, Math.round(progress * 100))));
+      setOcrProgress(Math.max(2, Math.min(100, Math.round(progress))));
     })
       .then((result) => {
         setOcrResult(result);
@@ -709,6 +711,32 @@ export default function Home() {
       ...(ocrResult?.words ?? []).map((word) => ["text", "ocr", "", "confirmed", false, word.confidence, word.box.x, word.box.y, word.box.width, word.box.height, word.text]),
     ];
     saveFile(toCsv(rows), "vision-inspector-results.csv", "text/csv;charset=utf-8");
+  };
+
+  const exportPdf = async () => {
+    if (!imageSrc) {
+      toast.error("يرجى تحميل صورة وتحليلها أولاً");
+      return;
+    }
+    try {
+      toast.info("جارٍ إعداد تقرير PDF الشامل للطباعة والحفظ…");
+      await exportInspectionPdf({
+        imageSrc,
+        fileName: fileName || "image-inspection",
+        detections,
+        ocrResult,
+        rescueMode,
+        deviceName: device === "webgpu" ? "WebGPU Hardware Acceleration" : "WASM / CPU Local Engine",
+        sourceModel: activeDetection?.sourceModel ?? "Xenova/yolos-tiny",
+        sourceDimensions: {
+          width: imageRef.current?.naturalWidth || 1280,
+          height: imageRef.current?.naturalHeight || 720,
+        },
+      });
+      toast.success("تم فتح تقرير PDF بنجاح!");
+    } catch (err: any) {
+      toast.error(err?.message || "تعذر تصدير تقرير PDF");
+    }
   };
 
   const onFileChange = (event: ChangeEvent<HTMLInputElement>) => acceptFile(event.target.files?.[0]);
@@ -1142,13 +1170,16 @@ export default function Home() {
                       </div>
                       <Download size={19} />
                     </div>
-                    <p>تصدير كامل لكافة إحداثيات الصناديق والكائنات ومستويات الثقة والنصوص المستخرجة.</p>
+                    <p>تصدير كامل لكافة إحداثيات الصناديق والكائنات ومستويات الثقة والنصوص المستخرجة في تقارير PDF وJSON وCSV.</p>
                     <div className="export-actions">
+                      <Button variant="default" size="sm" className="pdf-export-btn" onClick={exportPdf} disabled={!imageSrc || ocrStatus === "loading"}>
+                        <FileText size={14} /> تقرير PDF
+                      </Button>
                       <Button variant="outline" size="sm" onClick={exportJson} disabled={!hasExportableResults || ocrStatus === "loading"}>
-                        <FileJson2 size={15} /> تقرير JSON
+                        <FileJson2 size={14} /> تقرير JSON
                       </Button>
                       <Button variant="outline" size="sm" onClick={exportCsv} disabled={!hasExportableResults || ocrStatus === "loading"}>
-                        <Download size={15} /> جدول CSV
+                        <Download size={14} /> جدول CSV
                       </Button>
                     </div>
                   </section>
