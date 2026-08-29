@@ -1038,91 +1038,85 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* Analytics & Inspector Dock Directly Below Canvas */}
-                <div className="canvas-dock-grid">
-                  {/* Dock Card 1: Active Object Inspector */}
-                  <div className="dock-card">
+                {/* Selected Item Inspector Panel - Exactly matching user requirement */}
+                <section className="detail-panel">
+                  <div className="detail-heading">
+                    <span className="mono detail-source">{activeDetection?.sourceModel ?? "Xenova/yolos-tiny"}</span>
                     <div>
-                      <div className="card-heading">
-                        <div>
-                          <span className="card-eyebrow">INSPECTOR</span>
-                          <h2>{activeDetection ? `الكائن المحدد · #${String(activeDetection.id).padStart(2, "0")}` : "مفتش العناصر"}</h2>
-                        </div>
-                        <span className="mono dock-source">{activeDetection?.sourceModel ?? "LOCAL ViT"}</span>
-                      </div>
-
-                      {activeDetection ? (
-                        <div className="dock-inspector-body">
-                          <div className="dock-inspector-main">
-                            <span className={cn("detail-dot", activeDetection.isUnknown && "unknown-dot")} />
-                            <div>
-                              <strong className="text-xs font-bold text-slate-900 block">{displayDetectionLabel(activeDetection)}</strong>
-                              <span className="mono text-[9px] text-slate-400">{activeDetection.isUnknown ? "مرشح استدلالي" : activeDetection.label}</span>
-                            </div>
-                          </div>
-                          <div className="dock-metrics">
-                            <div className="dock-metric-box">
-                              <span>نسبة الثقة</span>
-                              <strong>{activeDetection.confidence}%</strong>
-                            </div>
-                            <div className="dock-metric-box">
-                              <span>الموقع</span>
-                              <strong className="mono">{Math.round(activeDetection.box.x)}% · {Math.round(activeDetection.box.y)}%</strong>
-                            </div>
-                            <div className="dock-metric-box">
-                              <span>الأبعاد</span>
-                              <strong className="mono">{Math.round(activeDetection.box.width)} × {Math.round(activeDetection.box.height)}%</strong>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="dock-empty">
-                          انقر على أي كائن من المشهد البصري لعرض إحداثياته ونموذج استدلاله.
-                        </div>
-                      )}
+                      <span className="card-eyebrow">INSPECTOR</span>
+                      <h2>{activeDetection ? `تفاصيل الكائن المحدد · #${String(activeDetection.id).padStart(2, "0")}` : "مفتش العناصر"}</h2>
                     </div>
                   </div>
 
-                  {/* Dock Card 2: OCR Extracted Text */}
-                  <div className="dock-card">
-                    <div>
-                      <div className="card-heading">
+                  {activeDetection ? (
+                    <div className="detail-content">
+                      <div className="detail-main">
+                        <span className={cn("detail-dot", activeDetection.isUnknown && "unknown-dot")} />
                         <div>
-                          <span className="card-eyebrow">TEXT EXTRACTION</span>
-                          <h2>النصوص المستخرجة (OCR)</h2>
+                          <strong>{displayDetectionLabel(activeDetection)}</strong>
+                          <span className="mono">{activeDetection.isUnknown ? "tentative / low confidence" : activeDetection.label}</span>
                         </div>
-                        <ScanText size={17} />
                       </div>
-
-                      {ocrStatus === "loading" && (
-                        <div className="ocr-progress">
-                          <span>يستخرج النصوص… {ocrProgress}%</span>
-                          <Progress value={ocrProgress} className="model-progress" />
-                        </div>
-                      )}
-
-                      {ocrStatus === "complete" && (
-                        <div className="ocr-output">
-                          <div className="ocr-meta">
-                            <span>{ocrResult?.words.length ?? 0} كلمة</span>
-                            <span>{ocrResult?.confidence ?? 0}% دقة</span>
-                          </div>
-                          <p>{ocrResult?.text || "لم يُعثر على نصوص مقروءة."}</p>
-                        </div>
-                      )}
-
-                      {ocrStatus === "error" && (
-                        <div className="ocr-error">
-                          <AlertCircle size={14} /> {ocrError}
-                        </div>
-                      )}
-
-                      {ocrStatus === "idle" && (
-                        <div className="dock-empty">
-                          تُستخرج النصوص العربية والإنجليزية تلقائياً مع بدء الفحص.
-                        </div>
-                      )}
+                      <div className="detail-metric">
+                        <span>نسبة الثقة</span>
+                        <strong>{activeDetection.confidence}%</strong>
+                      </div>
+                      <div className="detail-metric">
+                        <span>الموقع في المشهد</span>
+                        <strong className="mono">{Math.round(activeDetection.box.x)}% · {Math.round(activeDetection.box.y)}%</strong>
+                      </div>
+                      <div className="detail-metric">
+                        <span>الأبعاد النسبية</span>
+                        <strong className="mono">{Math.round(activeDetection.box.width)} × {Math.round(activeDetection.box.height)}%</strong>
+                      </div>
                     </div>
+                  ) : (
+                    <div className="detail-empty">
+                      اختر أي كائن من المشهد لعرض إحداثياته الدقيقة ونسبة الثقة ونموذج الاستدلال الخاص به.
+                    </div>
+                  )}
+                </section>
+
+                {/* Sub Grid for OCR & Structured Export Directly Under Inspector */}
+                <div className="canvas-sub-grid">
+                  {/* OCR Card */}
+                  <section className="control-card ocr-card">
+                    <div className="card-heading">
+                      <div>
+                        <span className="card-eyebrow">TEXT EXTRACTION</span>
+                        <h2>النصوص المستخرجة (OCR)</h2>
+                      </div>
+                      <ScanText size={19} />
+                    </div>
+
+                    {ocrStatus === "loading" && (
+                      <div className="ocr-progress">
+                        <span>يستخرج النصوص العربية والإنجليزية محلياً… {ocrProgress}%</span>
+                        <Progress value={ocrProgress} className="model-progress" />
+                      </div>
+                    )}
+
+                    {ocrStatus === "complete" && (
+                      <div className="ocr-output">
+                        <div className="ocr-meta">
+                          <span>{ocrResult?.words.length ?? 0} كلمة مكتشفة</span>
+                          <span>{ocrResult?.confidence ?? 0}% دقة المحرك</span>
+                        </div>
+                        <p>{ocrResult?.text || "لم يُعثر على نصوص مقروءة في هذه الصورة."}</p>
+                      </div>
+                    )}
+
+                    {ocrStatus === "error" && (
+                      <div className="ocr-error">
+                        <AlertCircle size={14} /> {ocrError}
+                      </div>
+                    )}
+
+                    {ocrStatus === "idle" && (
+                      <div className="ocr-empty">
+                        سيتم استخراج النصوص العربية والإنجليزية تلقائياً عند بدء التحليل.
+                      </div>
+                    )}
 
                     {ocrResult?.text && (
                       <Button
@@ -1137,32 +1131,27 @@ export default function Home() {
                         <Copy size={12} /> نسخ النص
                       </Button>
                     )}
-                  </div>
+                  </section>
 
-                  {/* Dock Card 3: Structured Export */}
-                  <div className="dock-card">
-                    <div>
-                      <div className="card-heading">
-                        <div>
-                          <span className="card-eyebrow">STRUCTURED EXPORT</span>
-                          <h2>تصدير البيانات</h2>
-                        </div>
-                        <Download size={17} />
+                  {/* Export Card */}
+                  <section className="control-card export-card">
+                    <div className="card-heading">
+                      <div>
+                        <span className="card-eyebrow">STRUCTURED EXPORT</span>
+                        <h2>تصدير البيانات والتقارير</h2>
                       </div>
-                      <p className="text-[10px] text-slate-500 leading-relaxed m-0 mb-3">
-                        حفظ الإحداثيات ونسب الثقة والنصوص المستخرجة في تقارير CSV وJSON.
-                      </p>
+                      <Download size={19} />
                     </div>
-
+                    <p>تصدير كامل لكافة إحداثيات الصناديق والكائنات ومستويات الثقة والنصوص المستخرجة.</p>
                     <div className="export-actions">
                       <Button variant="outline" size="sm" onClick={exportJson} disabled={!hasExportableResults || ocrStatus === "loading"}>
-                        <FileJson2 size={14} /> تقرير JSON
+                        <FileJson2 size={15} /> تقرير JSON
                       </Button>
                       <Button variant="outline" size="sm" onClick={exportCsv} disabled={!hasExportableResults || ocrStatus === "loading"}>
-                        <Download size={14} /> جدول CSV
+                        <Download size={15} /> جدول CSV
                       </Button>
                     </div>
-                  </div>
+                  </section>
                 </div>
               </section>
 
